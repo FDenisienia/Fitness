@@ -173,12 +173,10 @@ export default function CoachClientsPage() {
         {clientRoutineList.length === 0 ? (
           <p className="text-muted">Este alumno aún no tiene rutinas asignadas.</p>
         ) : (
-          <div className="d-flex flex-wrap gap-2">
+          <div className="cards-grid">
             {clientRoutineList.map(r => (
-              <Card key={r.id} className="p-3" style={{ minWidth: 280 }}>
-                <Link to={`/coach/rutinas/${r.id}`} className="text-decoration-none text-dark">
-                  <strong>{r.name}</strong>
-                </Link>
+              <Card key={r.id} className="p-3 client-routine-card text-decoration-none" as={Link} to={`/coach/rutinas/${r.id}`}>
+                <strong className="d-block text-truncate">{r.name}</strong>
                 <p className="mb-0 small text-muted">{r.objective} • {r.level}</p>
               </Card>
             ))}

@@ -101,11 +101,11 @@ export default function ExerciseLibraryPage() {
       </div>
       <Card className="mb-4">
         <Card.Body>
-          <Row className="g-2">
-            <Col md={4}><Form.Control placeholder="Buscar por nombre..." value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} /></Col>
-            <Col md={4}><Form.Select value={filter.muscle} onChange={e => setFilter(f => ({ ...f, muscle: e.target.value }))}><option value="">Grupo muscular</option>{MUSCLE_GROUPS.map(m => <option key={m} value={m}>{m}</option>)}</Form.Select></Col>
-            <Col md={4}><Form.Select value={filter.equipment} onChange={e => setFilter(f => ({ ...f, equipment: e.target.value }))}><option value="">Equipamiento</option>{EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}</Form.Select></Col>
-          </Row>
+          <div className="filters-grid">
+            <Form.Control className="flex-grow-1" placeholder="Buscar por nombre..." value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} />
+            <Form.Select style={{ minWidth: '160px' }} value={filter.muscle} onChange={e => setFilter(f => ({ ...f, muscle: e.target.value }))}><option value="">Grupo muscular</option>{MUSCLE_GROUPS.map(m => <option key={m} value={m}>{m}</option>)}</Form.Select>
+            <Form.Select style={{ minWidth: '160px' }} value={filter.equipment} onChange={e => setFilter(f => ({ ...f, equipment: e.target.value }))}><option value="">Equipamiento</option>{EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}</Form.Select>
+          </div>
         </Card.Body>
       </Card>
       <Card>

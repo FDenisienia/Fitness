@@ -158,7 +158,7 @@ export default function CoachDashboard() {
         <Link to="/coach/calendario" className="quick-action-btn"><IconCalendar /> Ver calendario</Link>
       </div>
 
-      <div className="dashboard-kpis">
+      <div className="dashboard-kpis kpis-grid">
         <Link to="/coach/alumnos" className="kpi-card">
           <div className="kpi-card-inner">
             <div className="kpi-icon-wrap kpi-users"><IconUsers /></div>

@@ -81,12 +81,11 @@ export default function ClientRoutinesPage() {
           <p>Tu coach te asignará rutinas personalizadas según tus objetivos y nivel. Cuando las recibas, las verás aquí.</p>
         </div>
       ) : (
-        <div className="row g-4">
+        <div className="cards-grid">
           {routines.map(r => {
             const { total: totalKcal } = calcRoutineCalories(r, []);
             return (
-              <div key={r.id} className="col-12 col-sm-6 col-lg-4">
-                <Link to={`/cliente/rutinas/${r.id}`} className="routine-card">
+              <Link key={r.id} to={`/cliente/rutinas/${r.id}`} className="routine-card">
                   <div className="routine-card-body">
                     <div className="routine-card-body-inner">
                       <div className="routine-card-category">{getObjectiveLabel(r.objective)}</div>
@@ -114,7 +113,6 @@ export default function ClientRoutinesPage() {
                     </div>
                   </div>
                 </Link>
-              </div>
             );
           })}
         </div>

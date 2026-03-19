@@ -14,18 +14,19 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .dashboard-header-left h1 {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
   font-weight: 700;
   color: var(--white-pure);
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 var(--space-1) 0;
+  line-height: 1.25;
 }
 
 .dashboard-header-left .subtitle {
@@ -90,12 +91,9 @@
   border: 2px solid var(--bg-card);
 }
 
-/* KPIs Cards */
+/* KPIs Cards - Mobile First */
 .dashboard-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-8);
 }
 
 .kpi-card {
@@ -163,8 +161,8 @@
 .dashboard-quick-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
 }
 
 .quick-action-btn {
@@ -197,17 +195,18 @@
   color: var(--orange);
 }
 
-/* Panel principal */
+/* Panel principal - Mobile First: 1 col → 2 cols en desktop */
 .dashboard-panels {
   display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 1024px) {
   .dashboard-panels {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr minmax(320px, 400px);
+    gap: var(--space-6);
   }
 }
 
@@ -519,20 +518,17 @@
   font-size: 0.95rem;
 }
 
-/* Responsive */
+/* Responsive - Mobile First refinements */
 @media (max-width: 639px) {
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .dashboard-kpis {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
   }
 
   .kpi-card {
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .kpi-value {
@@ -540,22 +536,25 @@
   }
 
   .dashboard-quick-actions {
-    gap: 0.5rem;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
   }
 
   .quick-action-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    padding: var(--space-3) var(--space-4);
+    font-size: 0.875rem;
+    min-height: var(--touch-min);
   }
 
   .alumno-card {
     flex-wrap: wrap;
+    padding: var(--space-4);
   }
 
   .alumno-actions {
     width: 100%;
     justify-content: flex-end;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
   }
 
   .dashboard-panel-body {
@@ -563,6 +562,25 @@
   }
 
   .dashboard-performance {
-    padding: 1rem;
+    padding: var(--space-4);
+  }
+
+  .coach-performance-badge {
+    margin-bottom: var(--space-4);
+  }
+}
+
+@media (max-width: 479px) {
+  .kpi-card-inner {
+    gap: var(--space-3);
+  }
+
+  .kpi-icon-wrap {
+    width: 40px;
+    height: 40px;
+  }
+
+  .kpi-value {
+    font-size: 1.35rem;
   }
 }

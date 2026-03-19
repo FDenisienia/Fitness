@@ -123,7 +123,7 @@ export default function ClientDashboard() {
       <p className="text-muted mb-4">Tu panel de entrenamiento</p>
 
       {user?.objective && (
-        <Card className="mb-4 border-0 shadow-sm objective-card">
+        <Card className="mb-4 objective-card">
           <Card.Body className="py-3 px-4">
             <h5 className="mb-2 text-uppercase small fw-semibold text-muted" style={{ letterSpacing: '0.5px' }}>Objetivo</h5>
             <p className="mb-0 objective-label">{getObjectiveLabel(user.objective)}</p>
@@ -133,7 +133,7 @@ export default function ClientDashboard() {
 
       {totalPlanified > 0 && (
         <>
-          <Card className="mb-4 border-0 shadow-sm overflow-hidden motivation-card">
+          <Card className="mb-4 overflow-hidden motivation-card">
             <Card.Body className="py-4 px-4">
               <Row className="align-items-center g-4">
                 <Col md="auto" className="text-center">
@@ -162,7 +162,7 @@ export default function ClientDashboard() {
             </Card.Body>
           </Card>
 
-          <Card className="mb-4 border-0 shadow-sm overflow-hidden balance-stats">
+          <Card className="mb-4 overflow-hidden balance-stats">
             <Card.Body className="p-0">
               <div className="balance-inner">
                 <div className="balance-item balance-completed">
@@ -187,7 +187,7 @@ export default function ClientDashboard() {
       )}
 
       {totalPlanified === 0 && (
-        <Card className="mb-4 border-0 shadow-sm motivation-empty">
+        <Card className="mb-4 motivation-empty">
           <Card.Body className="text-center py-5">
             <div className="motivation-ring motivation-ring-sm mb-3"><span className="motivation-percent">0%</span></div>
             <h5 className="mb-2">⭐ ¡Tu momento es ahora!</h5>
@@ -196,21 +196,21 @@ export default function ClientDashboard() {
         </Card>
       )}
 
-      <Card className="mb-4 border-0 shadow-sm summary-card">
-        <Card.Header className="bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <Card className="mb-4 summary-card">
+        <Card.Header className="border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
           <h5 className="mb-0">📊 Resumen de esta semana</h5>
           <span className="small text-muted">{weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} – {weekEnd.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
         </Card.Header>
         <Card.Body>
           <Row className="g-3">
-            <Col xs={6} md={3}>
+            <Col xs={12} sm={6} lg={3}>
               <div className="summary-stat">
                 <div className="summary-value text-warning">🔥 {totalCaloriesBurned.toLocaleString()}</div>
                 <div className="summary-label">kcal esta semana</div>
                 <div className="summary-hint">(estimadas)</div>
               </div>
             </Col>
-            <Col xs={6} md={3}>
+            <Col xs={12} sm={6} lg={3}>
               <div className="summary-stat">
                 <div className={`summary-value ${diffPeso != null && parseFloat(diffPeso) < 0 ? 'text-success' : diffPeso != null && parseFloat(diffPeso) > 0 ? 'text-warning' : ''}`}>
                   {pesoActual != null ? `${pesoActual} kg` : '—'}
@@ -223,14 +223,14 @@ export default function ClientDashboard() {
                 )}
               </div>
             </Col>
-            <Col xs={6} md={3}>
+            <Col xs={12} sm={6} lg={3}>
               <div className="summary-stat">
                 <div className="summary-value text-primary">{completedCount}</div>
                 <div className="summary-label">Sesiones completadas</div>
                 {totalPlanified > 0 && <div className="summary-hint">{totalPlanified} planificadas esta semana</div>}
               </div>
             </Col>
-            <Col xs={6} md={3}>
+            <Col xs={12} sm={6} lg={3}>
               <div className="summary-stat">
                 <div className="summary-value" style={{ color: 'var(--accent)' }}>⏱ {totalMinutesTrained}</div>
                 <div className="summary-label">Minutos esta semana</div>
@@ -246,7 +246,7 @@ export default function ClientDashboard() {
         </Card.Body>
       </Card>
 
-      <Card as={Link} to="/cliente/calendario" className="mb-4 border-0 shadow-sm text-decoration-none text-dark cal-card-link">
+      <Card as={Link} to="/cliente/calendario" className="mb-4 text-decoration-none cal-card-link">
         <Card.Body className="py-4">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div className="d-flex align-items-center gap-3 flex-wrap">
@@ -263,44 +263,6 @@ export default function ClientDashboard() {
           </div>
         </Card.Body>
       </Card>
-
-      <style>{`
-        .objective-card { border-radius: 16px; border: 1px solid #e2e8f0; }
-        .objective-label { font-size: 1.1rem; font-weight: 600; color: var(--dark); }
-        .cal-card-link:hover { background: #f8fafc; }
-        .balance-stats { border-radius: 16px; overflow: hidden; }
-        .balance-inner { display: flex; align-items: stretch; flex-wrap: wrap; }
-        .balance-item { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; }
-        .balance-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .balance-completed .balance-icon { background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(22, 163, 74, 0.08) 100%); color: #16a34a; }
-        .balance-incomplete .balance-icon { background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.08) 100%); color: #dc2626; }
-        .balance-total .balance-icon { background: linear-gradient(135deg, rgba(0, 184, 148, 0.15) 0%, rgba(0, 184, 148, 0.08) 100%); color: var(--accent); }
-        .balance-content { display: flex; flex-direction: column; gap: 0.15rem; }
-        .balance-value { font-size: 1.75rem; font-weight: 700; font-family: var(--font-display); letter-spacing: -0.5px; line-height: 1; }
-        .balance-completed .balance-value { color: #16a34a; }
-        .balance-incomplete .balance-value { color: #dc2626; }
-        .balance-total .balance-value { color: var(--dark); }
-        .balance-label { font-size: 0.8rem; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-        .balance-divider { width: 1px; background: linear-gradient(180deg, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent); min-height: 50px; align-self: center; }
-        .balance-progress { height: 4px; background: #f1f5f9; overflow: hidden; }
-        .balance-progress-bar { height: 100%; background: linear-gradient(90deg, #16a34a 0%, var(--accent) 100%); border-radius: 0 2px 2px 0; transition: width 0.4s ease; }
-        @media (max-width: 768px) { .balance-divider { display: none; } .balance-item { min-width: 100%; border-bottom: 1px solid #f1f5f9; } .balance-item:last-of-type { border-bottom: none; } }
-        .motivation-card { border-radius: 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; }
-        .motivation-ring { position: relative; width: 100px; height: 100px; }
-        .motivation-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
-        .motivation-ring .motivation-bg { fill: none; stroke: #e2e8f0; stroke-width: 3; }
-        .motivation-ring .motivation-fill { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.6s ease-out; }
-        .motivation-ring .motivation-percent { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; font-family: var(--font-display); color: var(--dark); }
-        .motivation-ring-sm { width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; }
-        .motivation-ring-sm .motivation-percent { position: static; font-size: 1rem; }
-        .motivation-empty { border-radius: 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
-        .summary-card { border-radius: 16px; }
-        .summary-stat { padding: 0.5rem 0; }
-        .summary-value { font-size: 1.35rem; font-weight: 800; font-family: var(--font-display); letter-spacing: -0.5px; line-height: 1.2; }
-        .summary-label { font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 0.15rem; }
-        .summary-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem; }
-        .summary-fun { font-style: italic; }
-      `}</style>
     </div>
   );
 }

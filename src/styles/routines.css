@@ -26,7 +26,7 @@
 }
 
 .routine-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   border-color: var(--orange-dim);
   border-left-color: var(--orange);
 }
@@ -48,7 +48,7 @@
 }
 
 .routine-card-body {
-  padding: 1.5rem 1.5rem 1.25rem;
+  padding: var(--space-6);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -84,8 +84,8 @@
 .routine-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .routine-card-meta-item {
@@ -793,24 +793,74 @@
 }
 
 @media (max-width: 639px) {
-  .routines-page-header h1 { font-size: 1.5rem; }
+  .routines-page-header {
+    margin-bottom: var(--space-6);
+  }
+  .routines-page-header h1 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+  .routine-card-body {
+    padding: var(--space-5);
+  }
+  .routine-card-title {
+    font-size: 1.2rem;
+    margin-bottom: var(--space-3);
+  }
+  .routine-card-meta {
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  .routine-card-meta-item {
+    font-size: 0.8rem;
+    padding: var(--space-2) var(--space-3);
+  }
   .routine-card-footer {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
   }
-  .routine-card-cta { align-self: flex-end; }
-  .routine-detail-hero { padding: 1.5rem 1.25rem; }
-  .routine-detail-title { font-size: 1.4rem; }
-  .routine-detail-stats { gap: 1rem; }
-  .ex-detail-header { padding: 0.9rem 1rem; }
-  .ex-detail-name { font-size: 1.1rem; }
-  .ex-detail-metrics { font-size: 0.8rem; gap: 0.35rem 0.75rem; }
-  .ex-detail-body { padding: 1rem; }
-  .ex-detail-info-card { padding: 0.85rem 1rem; }
-  .routine-exercises-list { padding: 0.85rem 1rem; }
-  .routine-day-header { padding: 0.9rem 1rem; }
-  .routine-day-number { width: 36px; height: 36px; font-size: 0.95rem; }
+  .routine-card-cta {
+    align-self: flex-end;
+    font-size: 0.9rem;
+  }
+  .routine-detail-hero {
+    padding: var(--space-6);
+  }
+  .routine-detail-title {
+    font-size: 1.35rem;
+  }
+  .routine-detail-stats {
+    gap: var(--space-4);
+  }
+  .ex-detail-header {
+    padding: var(--space-4);
+  }
+  .ex-detail-name {
+    font-size: 1.1rem;
+  }
+  .ex-detail-metrics {
+    font-size: 0.8rem;
+    gap: var(--space-2);
+  }
+  .ex-detail-body {
+    padding: var(--space-4);
+  }
+  .ex-detail-info-card {
+    padding: var(--space-4);
+  }
+  .routine-exercises-list {
+    padding: var(--space-4);
+  }
+  .routine-day-header {
+    padding: var(--space-4);
+  }
+  .routine-day-number {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
 }
 
 @media (max-width: 479px) {

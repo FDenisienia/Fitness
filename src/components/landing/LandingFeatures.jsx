@@ -58,7 +58,7 @@ export default function LandingFeatures() {
 
         <Row className="g-4">
           {FEATURES.map((f, i) => (
-            <Col sm={6} lg={4} xl={3} key={f.id}>
+            <Col xs={12} md={6} lg={4} xl={3} key={f.id}>
               <motion.div
                 className="feature-card"
                 initial={{ opacity: 0, y: 24 }}

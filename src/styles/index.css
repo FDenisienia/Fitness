@@ -1,6 +1,8 @@
+@import './design-system.css';
 @import './responsive.css';
 @import './routines.css';
 @import './coach-dashboard.css';
+@import './client-dashboard.css';
 @import './exercise-autocomplete.css';
 @import './landing.css';
 
@@ -10,6 +12,9 @@ html { scroll-behavior: smooth; }
 .btn-animated:hover, .btn:hover { transform: translateY(-2px); }
 .btn-primary:hover { box-shadow: 0 4px 12px rgba(255, 92, 0, 0.35); }
 .btn:active { transform: translateY(0); }
+@media (hover: none) {
+  .btn:active { transform: scale(0.98); opacity: 0.95; }
+}
 .feature-card, .problem-card, .pricing-card, .step-card, .benefit-card, .testimonial-card { transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.2s ease !important; }
 .form-control, .form-select, .chat-input { transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important; }
 a { transition: color 0.2s ease, opacity 0.2s ease !important; }
@@ -20,6 +25,9 @@ a { transition: color 0.2s ease, opacity 0.2s ease !important; }
 .navbar-landing { transition: background 0.3s ease, box-shadow 0.3s ease; }
 .kpi-card, .routine-card { transition: transform 0.25s ease, border-color 0.2s ease !important; }
 .kpi-card:hover, .routine-card:hover { transform: translateY(-3px); }
+@media (hover: none) {
+  .kpi-card:active, .routine-card:active { transform: scale(0.99); }
+}
 
 /* ===== VOLT_OS — Design System ===== */
 :root {
@@ -107,14 +115,15 @@ body {
   overflow-x: hidden;
 }
 
+/* Tipografía escalada - Mobile First */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--white-pure);
 }
-h1 { font-size: 36px; }
-h2 { font-size: 24px; }
-h3 { font-size: 18px; font-family: var(--font-body); font-weight: 500; }
+h1 { font-size: clamp(1.5rem, 5vw, 2.25rem); line-height: 1.2; }
+h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; }
+h3 { font-size: 1.125rem; font-family: var(--font-body); font-weight: 600; }
 
 a {
   text-decoration: none;
@@ -122,14 +131,22 @@ a {
   transition: color var(--transition);
 }
 
-/* ===== Botones ===== */
+/* ===== Botones - Touch-friendly ===== */
 .btn {
   font-family: var(--font-body);
   font-weight: 500;
   border-radius: var(--radius-md);
-  padding: 0.5rem 1.25rem;
+  padding: 0.625rem 1.25rem;
   transition: all var(--transition);
   min-height: var(--touch-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-sm {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.875rem;
 }
 
 .btn-primary {
@@ -311,7 +328,7 @@ a {
 .main-content {
   margin-left: 260px;
   min-height: 100vh;
-  padding: 1rem;
+  padding: var(--space-4);
   background: var(--bg-root);
   transition: margin-left 0.3s ease;
   overflow-x: hidden;
@@ -429,8 +446,8 @@ a {
   }
   .main-content {
     margin-left: 0;
-    padding: 1rem;
-    padding-top: 4.5rem;
+    padding: var(--space-4);
+    padding-top: var(--page-padding-top-mobile);
     width: 100%;
   }
 }
@@ -448,19 +465,19 @@ a {
   }
   .main-content {
     margin-left: 220px;
-    padding: 1.25rem 1.5rem;
+    padding: var(--space-5) var(--space-6);
   }
 }
 
 @media (min-width: 1024px) {
   .main-content {
-    padding: 1.5rem 2rem;
+    padding: var(--space-6) var(--space-8);
   }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1280px) {
   .main-content {
-    padding: 2rem 3rem;
+    padding: var(--space-8) var(--space-12);
   }
 }
 
@@ -529,22 +546,31 @@ a {
   background-color: transparent !important;
 }
 
+/* Tablas responsive - Mobile First */
 @media (max-width: 639px) {
   .table-modern th,
   .table-modern td {
-    padding: 0.75rem 0.5rem;
+    padding: var(--space-3) var(--space-2);
     font-size: 0.875rem;
   }
+  .table-modern .btn,
   .table-modern .btn-link {
-    min-height: 2.5rem;
-    padding: 0.35rem 0.5rem;
+    min-height: var(--touch-min);
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.85rem;
+  }
+  .table-responsive-wrapper {
+    margin: 0 calc(-1 * var(--space-4));
+    padding: 0 var(--space-4);
+    -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Imágenes */
+/* Imágenes - proporciones y evitar desbordes */
 img {
   max-width: 100%;
   height: auto;
+  display: block;
 }
 
 .video-container {

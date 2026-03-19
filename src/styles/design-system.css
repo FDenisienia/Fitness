@@ -1,0 +1,147 @@
+/**
+ * Design System - Mobile First
+ * FitCoach Pro - Sistema de espaciado, breakpoints y grids
+ *
+ * Breakpoints:
+ * - Base: 0-479px   (mobile small)
+ * - Mobile: 480-767px (mobile)
+ * - Tablet: 768-1023px
+ * - Desktop: 1024-1279px
+ * - Desktop XL: 1280px+
+ */
+
+:root {
+  /* Spacing system - base 8px */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;    /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem;  /* 24px */
+  --space-8: 2rem;    /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem;   /* 48px */
+  --space-16: 4rem;   /* 64px */
+
+  /* Touch targets - mínimo 44px para accesibilidad */
+  --touch-min: 2.75rem;  /* 44px */
+  --touch-comfortable: 3rem; /* 48px */
+
+  /* Breakpoints (para referencia en media queries) */
+  --bp-mobile: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+  --bp-desktop-xl: 1280px;
+
+  /* Page container padding - mobile first */
+  --page-padding-x: var(--space-4);
+  --page-padding-y: var(--space-4);
+  --page-padding-top-mobile: 4.5rem; /* espacio para mobile header */
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  :root {
+    --page-padding-x: var(--space-6);
+    --page-padding-y: var(--space-5);
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  :root {
+    --page-padding-x: var(--space-8);
+    --page-padding-y: var(--space-6);
+  }
+}
+
+/* Desktop XL */
+@media (min-width: 1280px) {
+  :root {
+    --page-padding-x: var(--space-12);
+    --page-padding-y: var(--space-8);
+  }
+}
+
+/* ===== GRID SYSTEM - Mobile First ===== */
+/* Cards/Productos: 1 col mobile → 2 tablet → 3-4 desktop */
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1280px) {
+  .cards-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+/* KPIs / Stats: 1 col mobile → 2 cols → 4 cols */
+.kpis-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 480px) {
+  .kpis-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+@media (min-width: 1024px) {
+  .kpis-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+/* Form filters: stack mobile, row tablet+ */
+.filters-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .filters-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+}
+
+/* ===== UTILIDADES RESPONSIVE ===== */
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+  .stack-mobile { flex-direction: column !important; }
+  .text-center-mobile { text-align: center !important; }
+  .w-full-mobile { width: 100% !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hide-tablet { display: none !important; }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop { display: none !important; }
+}

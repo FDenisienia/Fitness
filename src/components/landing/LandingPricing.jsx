@@ -23,7 +23,7 @@ export default function LandingPricing() {
 
         <Row className="g-4 justify-content-center">
           {PRICING_PLANS.map((plan, i) => (
-            <Col xs={12} sm={6} lg={3} key={plan.id}>
+            <Col xs={12} md={6} lg={4} xl={3} key={plan.id}>
               <motion.div
                 className={`pricing-card ${plan.popular ? 'pricing-card--popular' : ''}`}
                 initial={{ opacity: 0, y: 24 }}

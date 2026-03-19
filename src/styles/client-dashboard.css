@@ -1,0 +1,274 @@
+/**
+ * Client Dashboard - Volt OS (tema oscuro)
+ * Mobile First - 1 columna en mobile, layout fluido
+ */
+
+.client-dashboard {
+  --success: #22c55e;
+  --success-bg: rgba(34, 197, 94, 0.15);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+}
+
+.client-dashboard .objective-card {
+  border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border-subtle);
+}
+
+.client-dashboard .objective-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--white-pure);
+}
+
+.client-dashboard .cal-card-link:hover {
+  background: var(--bg-card-hover) !important;
+}
+
+/* Balance stats - Mobile: stack vertical, Desktop: row */
+.client-dashboard .balance-stats {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.client-dashboard .balance-inner {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.client-dashboard .balance-item {
+  flex: 1;
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.client-dashboard .balance-item:last-of-type {
+  border-bottom: none;
+}
+
+@media (min-width: 480px) {
+  .client-dashboard .balance-item {
+    min-width: 0;
+    flex: 1;
+    border-bottom: none;
+  }
+}
+
+.client-dashboard .balance-divider {
+  display: none;
+  width: 1px;
+  background: var(--border-subtle);
+  min-height: 40px;
+  align-self: center;
+}
+
+@media (min-width: 768px) {
+  .client-dashboard .balance-divider {
+    display: block;
+  }
+}
+
+.client-dashboard .balance-icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.client-dashboard .balance-completed .balance-icon {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.client-dashboard .balance-incomplete .balance-icon {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.client-dashboard .balance-total .balance-icon {
+  background: var(--orange-ghost);
+  color: var(--orange);
+}
+
+.client-dashboard .balance-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.client-dashboard .balance-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .client-dashboard .balance-value {
+    font-size: 1.75rem;
+  }
+}
+
+.client-dashboard .balance-completed .balance-value {
+  color: var(--success);
+}
+
+.client-dashboard .balance-incomplete .balance-value {
+  color: var(--danger);
+}
+
+.client-dashboard .balance-total .balance-value {
+  color: var(--white-pure);
+}
+
+.client-dashboard .balance-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--white-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.client-dashboard .balance-progress {
+  height: 4px;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.client-dashboard .balance-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success) 0%, var(--orange) 100%);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.4s ease;
+}
+
+/* Motivation card */
+.client-dashboard .motivation-card {
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 0.5px solid var(--border-subtle);
+}
+
+.client-dashboard .motivation-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+@media (min-width: 768px) {
+  .client-dashboard .motivation-ring {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+.client-dashboard .motivation-ring svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.client-dashboard .motivation-ring .motivation-bg {
+  fill: none;
+  stroke: var(--border-default);
+  stroke-width: 3;
+}
+
+.client-dashboard .motivation-ring .motivation-fill {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease-out;
+}
+
+.client-dashboard .motivation-ring .motivation-percent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--white-pure);
+}
+
+@media (min-width: 768px) {
+  .client-dashboard .motivation-ring .motivation-percent {
+    font-size: 1.25rem;
+  }
+}
+
+.client-dashboard .motivation-ring-sm {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.client-dashboard .motivation-ring-sm .motivation-percent {
+  position: static;
+  font-size: 1rem;
+}
+
+.client-dashboard .motivation-empty {
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 0.5px solid var(--border-subtle);
+}
+
+/* Summary */
+.client-dashboard .summary-card {
+  border-radius: var(--radius-lg);
+}
+
+.client-dashboard .summary-stat {
+  padding: var(--space-2) 0;
+}
+
+.client-dashboard .summary-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .client-dashboard .summary-value {
+    font-size: 1.35rem;
+  }
+}
+
+.client-dashboard .summary-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--white-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: var(--space-1);
+}
+
+.client-dashboard .summary-hint {
+  font-size: 0.75rem;
+  color: var(--white-dim);
+  margin-top: var(--space-1);
+}
+
+.client-dashboard .summary-fun {
+  font-style: italic;
+}

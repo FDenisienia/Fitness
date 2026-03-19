@@ -29,7 +29,7 @@ export default function LandingBenefits() {
 
         <Row className="g-4">
           {BENEFITS.map((b, i) => (
-            <Col sm={6} lg={3} key={i}>
+            <Col xs={12} md={6} lg={3} key={i}>
               <motion.div
                 className="benefit-card"
                 initial={{ opacity: 0, y: 24 }}

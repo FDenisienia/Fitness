@@ -22,7 +22,7 @@ export default function LandingTestimonials() {
 
         <Row className="g-4">
           {TESTIMONIALS.map((t, i) => (
-            <Col md={4} key={i}>
+            <Col xs={12} md={4} key={i}>
               <motion.div
                 className="testimonial-card"
                 initial={{ opacity: 0, y: 24 }}

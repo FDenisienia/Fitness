@@ -52,7 +52,7 @@ export default function LandingProblemSolution() {
 
         <Row className="g-4 mb-5">
           {PROBLEMS.map((p, i) => (
-            <Col md={4} key={i}>
+            <Col xs={12} md={4} key={i}>
               <motion.div
                 className="problem-card"
                 initial={{ opacity: 0, y: 24 }}

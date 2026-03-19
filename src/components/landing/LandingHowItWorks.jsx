@@ -25,7 +25,7 @@ export default function LandingHowItWorks() {
         <div className="how-it-works-timeline">
           <Row className="justify-content-center">
             {HOW_IT_WORKS_STEPS.map((s, i) => (
-              <Col xs={12} sm={6} lg key={s.step} className="mb-4 mb-lg-0">
+              <Col xs={12} md={6} lg key={s.step} className="mb-4 mb-lg-0">
                 <motion.div
                   className="step-card"
                   initial={{ opacity: 0, y: 24 }}

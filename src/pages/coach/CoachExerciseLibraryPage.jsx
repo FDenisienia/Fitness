@@ -74,12 +74,12 @@ export default function CoachExerciseLibraryPage() {
       </div>
       <Card className="mb-4">
         <Card.Body>
-          <Row className="g-2">
-            <Col md={3}><Form.Control placeholder="Buscar..." value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} /></Col>
-            <Col md={3}><Form.Select value={filter.muscle} onChange={e => setFilter(f => ({ ...f, muscle: e.target.value }))}><option value="">Grupo muscular</option>{MUSCLE_GROUPS.map(m => <option key={m} value={m}>{m}</option>)}</Form.Select></Col>
-            <Col md={3}><Form.Select value={filter.equipment} onChange={e => setFilter(f => ({ ...f, equipment: e.target.value }))}><option value="">Equipamiento</option>{EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}</Form.Select></Col>
-            <Col md={3}><Form.Select value={filter.scope} onChange={e => setFilter(f => ({ ...f, scope: e.target.value }))}><option value="">Todos</option><option value="global">Global</option><option value="personal">Mi biblioteca</option></Form.Select></Col>
-          </Row>
+          <div className="filters-grid">
+            <Form.Control className="flex-grow-1" placeholder="Buscar..." value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} />
+            <Form.Select style={{ minWidth: '140px' }} value={filter.muscle} onChange={e => setFilter(f => ({ ...f, muscle: e.target.value }))}><option value="">Grupo muscular</option>{MUSCLE_GROUPS.map(m => <option key={m} value={m}>{m}</option>)}</Form.Select>
+            <Form.Select style={{ minWidth: '140px' }} value={filter.equipment} onChange={e => setFilter(f => ({ ...f, equipment: e.target.value }))}><option value="">Equipamiento</option>{EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}</Form.Select>
+            <Form.Select style={{ minWidth: '140px' }} value={filter.scope} onChange={e => setFilter(f => ({ ...f, scope: e.target.value }))}><option value="">Todos</option><option value="global">Global</option><option value="personal">Mi biblioteca</option></Form.Select>
+          </div>
         </Card.Body>
       </Card>
       <Card>
