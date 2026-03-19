@@ -7,22 +7,30 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const result = login(email, password);
-    if (result.success && result.user) {
-      const role = result.user.role;
-      if (role === 'admin') navigate('/admin');
-      else if (role === 'coach') navigate('/coach');
-      else navigate('/cliente');
-    } else {
-      setError(result.error);
+    setLoading(true);
+    try {
+      const result = await login(email, password);
+      if (result.success && result.user) {
+        const role = result.user.role;
+        if (role === 'admin') navigate('/admin');
+        else if (role === 'coach') navigate('/coach');
+        else navigate('/cliente');
+      } else {
+        setError(result.error || 'Error al iniciar sesión');
+      }
+    } catch (err) {
+      setError(err?.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
     }
   };
 
