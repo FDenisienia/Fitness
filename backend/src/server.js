@@ -10,10 +10,13 @@ const app = express();
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || config.corsOrigins.includes(origin)) return cb(null, true);
-    return cb(null, config.corsOrigins[0]);
+    if (!origin) return cb(null, true);
+    if (config.corsOrigins.includes(origin)) return cb(null, true);
+    cb(null, false);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json({ limit: '1mb' }));
