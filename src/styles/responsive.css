@@ -1,0 +1,25 @@
+/**
+ * Sistema Responsive - Mobile First
+ * Breakpoints: 640px (mobile), 1024px (tablet/desktop)
+ */
+
+/* Contenedor fluid principal */
+.main-content {
+  width: 100%;
+  min-width: 0; /* Evita overflow por flex children */
+}
+
+/* Utilidades responsive */
+@media (max-width: 639px) {
+  .hide-mobile { display: none !important; }
+  .stack-mobile { flex-direction: column !important; }
+  .text-center-mobile { text-align: center !important; }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hide-tablet { display: none !important; }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop { display: none !important; }
+}

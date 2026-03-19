@@ -1,0 +1,91 @@
+/* ===== Animaciones y microinteracciones - SaaS Premium ===== */
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Botones - hover con elevación y transición */
+.btn-animated,
+.btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease !important;
+}
+
+.btn-animated:hover,
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(255, 92, 0, 0.35);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Cards - hover con elevación suave */
+.feature-card,
+.problem-card,
+.pricing-card,
+.step-card,
+.benefit-card,
+.testimonial-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.2s ease !important;
+}
+
+/* Inputs - focus moderno */
+.form-control,
+.form-select,
+.chat-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+}
+
+/* Links - transición de color */
+a {
+  transition: color 0.2s ease, opacity 0.2s ease !important;
+}
+
+/* Mockup hero - levitación sutil */
+@keyframes float-mockup {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.landing-hero-mockup .dashboard-mockup {
+  animation: float-mockup 4s ease-in-out infinite;
+}
+
+/* Respetar preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-mockup .dashboard-mockup {
+    animation: none;
+  }
+  .btn-animated:hover,
+  .btn:hover {
+    transform: none;
+  }
+}
+
+/* Reducir animación en mobile para performance */
+@media (max-width: 768px) {
+  .landing-hero-mockup .dashboard-mockup {
+    animation: none;
+  }
+}
+
+/* Navbar - transición suave al scroll */
+.navbar-landing {
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Card hover feedback visual */
+.kpi-card,
+.routine-card {
+  transition: transform 0.25s ease, border-color 0.2s ease !important;
+}
+
+.kpi-card:hover,
+.routine-card:hover {
+  transform: translateY(-3px);
+}

@@ -1,0 +1,110 @@
+/* ExerciseAutocomplete - Volt OS */
+
+.exercise-autocomplete {
+  position: relative;
+}
+
+.exercise-autocomplete-input-wrap {
+  position: relative;
+  display: flex;
+}
+
+.exercise-autocomplete-input {
+  padding-right: 2rem;
+  border-radius: var(--radius-md);
+}
+
+.exercise-autocomplete-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: var(--orange-ghost);
+  color: var(--orange-dim);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.exercise-autocomplete-clear:hover {
+  background: var(--orange-light);
+  color: var(--on-orange);
+}
+
+.exercise-autocomplete-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.35rem;
+}
+
+.exercise-autocomplete-badge--library {
+  background: var(--orange-ghost);
+  color: var(--orange);
+}
+
+.exercise-autocomplete-badge--manual {
+  background: var(--orange-ghost);
+  color: var(--orange-light);
+}
+
+.exercise-autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-card);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1050;
+}
+
+.exercise-autocomplete-dropdown-hint {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--white-dim);
+  border-bottom: 1px solid var(--orange-ghost);
+}
+
+.exercise-autocomplete-item {
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.15s ease;
+}
+
+.exercise-autocomplete-item:hover,
+.exercise-autocomplete-item.highlighted {
+  background: var(--bg-card-hover);
+}
+
+.exercise-autocomplete-item-name {
+  font-weight: 500;
+  color: var(--white-pure);
+}
+
+.exercise-autocomplete-item-meta {
+  font-size: 0.8rem;
+  color: var(--white-dim);
+}

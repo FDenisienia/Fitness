@@ -1,0 +1,111 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../utils/prisma.js';
+import { config } from '../config/index.js';
+import { UnauthorizedError, BadRequestError } from '../utils/errors.js';
+
+const SALT_ROUNDS = 10;
+
+export async function register(data) {
+  const existing = await prisma.user.findUnique({
+    where: { email: data.email.toLowerCase() },
+  });
+  if (existing) {
+    throw new BadRequestError('Ya existe un usuario con ese email');
+  }
+  const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
+  const user = await prisma.user.create({
+    data: {
+      email: data.email.toLowerCase(),
+      passwordHash,
+      name: data.name,
+      lastName: data.lastName || null,
+      role: 'cliente',
+      status: 'active',
+    },
+    select: userSelect,
+  });
+  return { user, token: generateToken(user) };
+}
+
+export async function login(email, password) {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    include: {
+      coach: true,
+      client: { include: { coach: { include: { user: { select: { id: true } } } } } },
+    },
+  });
+  if (!user || user.status !== 'active') {
+    throw new UnauthorizedError('Email o contraseña incorrectos');
+  }
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) {
+    throw new UnauthorizedError('Email o contraseña incorrectos');
+  }
+  const { passwordHash: _, ...safeUser } = user;
+  return { user: formatUser(safeUser), token: generateToken(safeUser) };
+}
+
+export async function getProfile(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      coach: true,
+      client: { include: { coach: true } },
+    },
+  });
+  if (!user || user.status !== 'active') {
+    throw new UnauthorizedError('Usuario no encontrado');
+  }
+  const { passwordHash: _, ...safe } = user;
+  return formatUser(safe);
+}
+
+function generateToken(user) {
+  return jwt.sign(
+    { userId: user.id, role: user.role },
+    config.jwtSecret,
+    { expiresIn: config.jwtExpiresIn }
+  );
+}
+
+const userSelect = {
+  id: true,
+  email: true,
+  name: true,
+  lastName: true,
+  role: true,
+  status: true,
+  createdAt: true,
+};
+
+function formatUser(u) {
+  const base = {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    lastName: u.lastName,
+    role: u.role,
+    status: u.status,
+    active: u.status === 'active',
+    createdAt: u.createdAt,
+  };
+  if (u.role === 'coach' && u.coach) {
+    base.coachId = u.coach.id;
+    base.specialty = u.coach.specialty;
+    base.subscriptionPlan = u.coach.subscriptionPlan || 'basico';
+    base.subscriptionStatus = u.coach.subscriptionStatus || 'activa';
+  }
+  if (u.role === 'cliente' && u.client) {
+    base.clientId = u.client.id;
+    base.coachId = u.client.coach?.userId; // user id del coach para frontend
+    base.subscriptionPlan = u.client.coach?.subscriptionPlan || 'basico';
+    base.age = u.client.age;
+    base.weight = u.client.weight;
+    base.height = u.client.height;
+    base.objective = u.client.objective;
+    base.level = u.client.level;
+  }
+  return base;
+}

@@ -1,0 +1,257 @@
+// FitCoach Pro - Schema MySQL
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== USUARIOS Y ROLES =====
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String  @map("password_hash")
+  name         String
+  lastName     String?  @map("last_name")
+  role         String   // admin | coach | cliente
+  status       String   @default("active") // active | inactive
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  coach    Coach?
+  client   Client?
+}
+
+// ===== COACHES =====
+model Coach {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  phone           String?
+  specialty       String?
+  bio             String?  @db.Text
+  subscriptionPlan String? @map("subscription_plan") // basico | pro | premium | personalizado
+  subscriptionStatus String? @default("activa") @map("subscription_status")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clients         Client[]
+  routines        Routine[]
+  adminConversations AdminCoachConversation[]
+}
+
+// ===== CLIENTES =====
+model Client {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  coachId     String   @map("coach_id")
+  age         Int?
+  weight      Float?
+  height      Float?
+  objective   String?
+  level       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach       Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  clientRoutines ClientRoutine[]
+  weightLogs  WeightLog[]
+  progressLogs ProgressLog[]
+  plannedWorkouts PlannedWorkout[]
+  conversations Conversation[]
+}
+
+// ===== BIBLIOTECA DE EJERCICIOS =====
+model ExerciseLibrary {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?  @db.Text
+  instructions  String?  @db.Text
+  muscleGroup   String?  @map("muscle_group")
+  equipment     String?
+  caloriasPorRep Float?  @map("calorias_por_rep")
+  caloriasPorMin Float?  @map("calorias_por_min")
+  videoUrl      String?  @map("video_url")
+  createdById   String?  @map("created_by_id") // null = global, coach id = personal
+  scope         String   @default("global") // global | coach
+  status        String   @default("active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  routineExercises RoutineExercise[]
+  progressLogs     ProgressLog[]
+}
+
+// ===== RUTINAS =====
+model Routine {
+  id                String   @id @default(cuid())
+  coachId           String   @map("coach_id")
+  name              String
+  description       String?  @db.Text
+  objective         String?
+  level             String?
+  frequencyPerWeek  Int?
+  durationMinutes   Int?
+  daysCount         Int?
+  stimulus          String?
+  status            String   @default("activa") // borrador | activa | archivada
+  recommendations   String?  @db.Text
+  warnings          String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  coach             Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  routineExercises  RoutineExercise[]
+  clientRoutines    ClientRoutine[]
+  plannedWorkouts   PlannedWorkout[]
+}
+
+// ===== EJERCICIOS DENTRO DE RUTINA =====
+model RoutineExercise {
+  id            String   @id @default(cuid())
+  routineId     String   @map("routine_id")
+  exerciseId    String?  @map("exercise_id") // null si es custom
+  customName    String?  @map("custom_name")
+  description   String?  @db.Text
+  instructions  String?  @db.Text
+  sets          Int      @default(3)
+  reps          String?  // "8", "10-12", "AMRAP"
+  time          String?  // para cardio: "30 min"
+  rest          String?
+  caloriasPorRep Float?  @map("calorias_por_rep")
+  caloriasPorMin Float?  @map("calorias_por_min")
+  videoUrl      String?  @map("video_url")
+  orderIndex    Int      @default(0) @map("order_index")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  routine       Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise      ExerciseLibrary? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  progressLogs  ProgressLog[]
+}
+
+// ===== ASIGNACIÓN RUTINA-CLIENTE =====
+model ClientRoutine {
+  id          String    @id @default(cuid())
+  clientId    String    @map("client_id")
+  routineId   String    @map("routine_id")
+  assignedAt  DateTime  @default(now()) @map("assigned_at")
+  assignedById String?  @map("assigned_by_id")
+  active      Boolean   @default(true)
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  routine     Routine   @relation(fields: [routineId], references: [id], onDelete: Cascade)
+}
+
+// ===== PLANIFICACIÓN CALENDARIO (workouts por fecha) =====
+model PlannedWorkout {
+  id            String    @id @default(cuid())
+  clientId      String    @map("client_id")
+  routineId     String    @map("routine_id")
+  date          DateTime  @db.Date
+  notes         String?   @db.Text
+  completed     Boolean   @default(false)
+  completedAt   DateTime? @map("completed_at")
+  rpe           Int?      // 1-10
+  sensations    String?   @db.Text
+  feedback      String?   @db.Text
+  clientNotes   String?   @map("client_notes") @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  routine       Routine   @relation(fields: [routineId], references: [id], onDelete: Cascade)
+}
+
+// ===== REGISTRO DE PESO CORPORAL =====
+model WeightLog {
+  id            String   @id @default(cuid())
+  clientId      String   @map("client_id")
+  weight        Float
+  loggedAt      DateTime @default(now()) @map("logged_at")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ===== PROGRESO POR EJERCICIO =====
+model ProgressLog {
+  id                String   @id @default(cuid())
+  clientId          String   @map("client_id")
+  exerciseId        String?  @map("exercise_id")
+  routineExerciseId String?  @map("routine_exercise_id")
+  usedWeight        Float?   @map("used_weight")
+  repsDone          Int?     @map("reps_done")
+  notes             String?  @db.Text
+  loggedAt          DateTime @default(now()) @map("logged_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  client            Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  exercise          ExerciseLibrary? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  routineExercise   RoutineExercise? @relation(fields: [routineExerciseId], references: [id], onDelete: SetNull)
+}
+
+// ===== CHAT COACH-CLIENTE =====
+model Conversation {
+  id               String   @id @default(cuid())
+  clientId         String   @map("client_id")
+  coachId          String   @map("coach_id")
+  lastMessageAt    DateTime? @map("last_message_at")
+  lastMessagePreview String? @map("last_message_preview") @db.Text
+  coachUnreadCount Int      @default(0) @map("coach_unread_count")
+  clientUnreadCount Int     @default(0) @map("client_unread_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  messages         ChatMessage[]
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  senderId       String   @map("sender_id")
+  senderRole     String   @map("sender_role") // coach | cliente
+  content        String   @db.Text
+  readBy         String?  @map("read_by") @db.Text // JSON array de user ids
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+// ===== CHAT ADMIN-COACH (consultas/soporte) =====
+model AdminCoachConversation {
+  id               String   @id @default(cuid())
+  coachId          String   @map("coach_id")
+  adminId          String   @map("admin_id")
+  lastMessageAt    DateTime? @map("last_message_at")
+  lastMessagePreview String? @map("last_message_preview") @db.Text
+  adminUnreadCount Int      @default(0) @map("admin_unread_count")
+  coachUnreadCount Int      @default(0) @map("coach_unread_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  coach            Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  messages         AdminCoachChatMessage[]
+}
+
+model AdminCoachChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  senderId       String   @map("sender_id")
+  senderRole     String   @map("sender_role") // admin | coach
+  content        String   @db.Text
+  readBy         String?  @map("read_by") @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation   AdminCoachConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}

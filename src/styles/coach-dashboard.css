@@ -1,0 +1,568 @@
+/* ===== Coach Dashboard - Volt OS ===== */
+
+.coach-dashboard {
+  --dashboard-header-bg: var(--bg-root);
+  --dashboard-card-border: var(--border-subtle);
+  --dashboard-hover: var(--orange-ghost);
+  --state-completed: var(--orange);
+  --state-pending: var(--warning-text);
+  --state-inactive: var(--danger-text);
+}
+
+.dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dashboard-header-left h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-weight: 700;
+  color: var(--white-pure);
+  margin: 0 0 0.25rem 0;
+}
+
+.dashboard-header-left .subtitle {
+  color: var(--white-dim);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.dashboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--border-subtle);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.dashboard-icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--orange-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.dashboard-icon-btn:hover {
+  background: var(--orange-ghost);
+  color: var(--orange);
+  border-color: var(--orange-dim);
+}
+
+.dashboard-icon-btn .badge-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: var(--state-inactive);
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+}
+
+/* KPIs Cards */
+.dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-subtle);
+  border-left: 2px solid var(--orange);
+  padding: 1.25rem 1.5rem;
+  transition: all var(--transition);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--orange-light);
+}
+
+.kpi-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.kpi-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-icon-wrap.kpi-users { background: var(--orange-ghost); color: var(--orange); }
+.kpi-icon-wrap.kpi-routines { background: var(--orange-ghost); color: var(--orange-light); }
+.kpi-icon-wrap.kpi-workouts { background: rgba(255, 170, 0, 0.2); color: var(--warning-text); }
+.kpi-icon-wrap.kpi-messages { background: rgba(255, 59, 47, 0.2); color: var(--danger-text); }
+
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.15rem;
+  color: var(--white-pure);
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  color: var(--white-dim);
+  margin-bottom: 0.35rem;
+}
+
+.kpi-micro {
+  font-size: 0.75rem;
+  color: var(--orange);
+  font-weight: 500;
+}
+
+.kpi-micro.negative { color: var(--danger-text); }
+
+/* Quick Actions */
+.dashboard-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--orange-light);
+  background: transparent;
+  color: var(--orange);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all var(--transition);
+}
+
+.quick-action-btn:hover {
+  background: var(--orange-ghost);
+  color: var(--orange);
+  border-color: var(--orange-dim);
+}
+
+.quick-action-btn svg {
+  flex-shrink: 0;
+  color: var(--orange-dim);
+}
+
+.quick-action-btn:hover svg {
+  color: var(--orange);
+}
+
+/* Panel principal */
+.dashboard-panels {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.dashboard-panel-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--white-pure);
+}
+
+.dashboard-panel-body {
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* Card de alumno */
+.alumno-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--transition);
+}
+
+.alumno-card:last-child { border-bottom: none; }
+
+.alumno-card:hover {
+  background: var(--bg-card-hover);
+}
+
+.alumno-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--orange-ghost);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.alumno-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.alumno-name {
+  font-weight: 600;
+  color: var(--white-pure);
+  margin-bottom: 0.2rem;
+}
+
+.alumno-meta {
+  font-size: 0.8rem;
+  color: var(--white-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alumno-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.alumno-status-dot.completed { background: var(--state-completed); }
+.alumno-status-dot.pending { background: var(--state-pending); }
+.alumno-status-dot.inactive { background: var(--state-inactive); }
+
+.alumno-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.alumno-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--white-ghost);
+  color: var(--orange-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.alumno-action-btn:hover {
+  background: var(--orange-ghost);
+  color: var(--orange);
+}
+
+/* Feed actividad */
+.activity-item {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  gap: 1rem;
+  transition: background var(--transition);
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-icon.msg { background: var(--orange-ghost); color: var(--orange); }
+.activity-icon.alert { background: var(--warning-bg); color: var(--warning-text); }
+.activity-icon.success { background: var(--orange-ghost); color: var(--orange); }
+
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-text {
+  font-size: 0.9rem;
+  color: var(--white-muted);
+  margin-bottom: 0.2rem;
+}
+
+.activity-time {
+  font-size: 0.75rem;
+  color: var(--white-dim);
+}
+
+/* Sección rendimiento */
+.dashboard-performance {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-subtle);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-performance-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-performance h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--white-pure);
+}
+
+.performance-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.performance-filter-btn {
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  font-size: 0.85rem;
+  color: var(--white-dim);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.performance-filter-btn.active {
+  background: var(--orange);
+  color: var(--on-orange);
+  border-color: var(--orange);
+  font-weight: 700;
+}
+
+.performance-filter-btn:hover:not(.active) {
+  background: var(--orange-ghost);
+  color: var(--orange);
+}
+
+.coach-performance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+
+.coach-performance-badge strong {
+  color: var(--orange);
+}
+
+/* Calendario compacto */
+.dashboard-calendar-wrap {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-subtle);
+  padding: 1.25rem;
+}
+
+.dashboard-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dashboard-calendar-header h4 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--white-pure);
+}
+
+.mini-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.mini-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--white-muted);
+}
+
+.mini-calendar-day:hover {
+  background: var(--orange-ghost);
+  color: var(--orange);
+}
+
+.mini-calendar-day.today {
+  background: var(--orange);
+  color: var(--on-orange);
+  font-weight: 700;
+}
+
+.mini-calendar-day.has-workout {
+  font-weight: 600;
+  color: var(--orange);
+}
+
+.mini-calendar-day.has-workout.today {
+  color: var(--on-orange);
+}
+
+.mini-calendar-weekday {
+  font-size: 0.65rem;
+  color: var(--white-dim);
+  text-align: center;
+}
+
+.panel-footer-link {
+  display: block;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  font-weight: 500;
+  color: var(--orange);
+  text-decoration: none;
+  border-top: 1px solid var(--border-subtle);
+  transition: background var(--transition);
+}
+
+.panel-footer-link:hover {
+  background: var(--orange-ghost);
+  color: var(--orange);
+}
+
+.dashboard-empty {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--white-dim);
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 639px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .kpi-card {
+    padding: 1rem;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-quick-actions {
+    gap: 0.5rem;
+  }
+
+  .quick-action-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .alumno-card {
+    flex-wrap: wrap;
+  }
+
+  .alumno-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+
+  .dashboard-panel-body {
+    max-height: 320px;
+  }
+
+  .dashboard-performance {
+    padding: 1rem;
+  }
+}
