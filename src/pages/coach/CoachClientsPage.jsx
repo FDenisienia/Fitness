@@ -38,20 +38,18 @@ export default function CoachClientsPage() {
         clientsApi.list(),
         routinesApi.list(),
       ]);
-      setClients(clientsRes.data || []);
+      const cList = clientsRes.data || [];
+      setClients(cList);
       setRoutines(routinesRes.data || []);
-      const crMap = {};
-      const pwMap = {};
-      for (const c of clientsRes.data || []) {
-        try {
-          const [cr, pw] = await Promise.all([
-            clientRoutinesApi.listByClient(c.id),
-            plannedWorkoutsApi.listByClient(c.id),
-          ]);
-          crMap[c.id] = cr.data || [];
-          pwMap[c.id] = pw.data || [];
-        } catch (_) {}
-      }
+      const clientDataPromises = cList.map((c) =>
+        Promise.all([
+          clientRoutinesApi.listByClient(c.id).catch(() => ({ data: [] })),
+          plannedWorkoutsApi.listByClient(c.id).catch(() => ({ data: [] })),
+        ]).then(([cr, pw]) => ({ id: c.id, cr: cr.data || [], pw: pw.data || [] }))
+      );
+      const clientData = await Promise.all(clientDataPromises);
+      const crMap = Object.fromEntries(clientData.map((d) => [d.id, d.cr]));
+      const pwMap = Object.fromEntries(clientData.map((d) => [d.id, d.pw]));
       setClientRoutines(crMap);
       setPlannedWorkouts(pwMap);
     } catch (err) {

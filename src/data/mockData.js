@@ -13,8 +13,6 @@ export const LEVELS = ['principiante', 'intermedio', 'avanzado'];
 
 export const ROUTINE_STATUS = ['borrador', 'activa', 'archivada'];
 
-export const CONSULTATION_STATUS = ['pendiente', 'respondida', 'cerrada'];
-
 export const STIMULUS_TYPES = ['fuerza', 'resistencia', 'quema de grasa', 'mixto'];
 
 export const MUSCLE_GROUPS = ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Piernas', 'Isquiotibiales', 'Glúteos', 'Core', 'Cardio'];

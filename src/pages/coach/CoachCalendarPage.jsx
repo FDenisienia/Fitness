@@ -3,12 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Modal, Form, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { clientsApi, routinesApi, plannedWorkoutsApi } from '../../api';
+import { clientDisplayName } from '../../utils/clientDisplay';
 import Calendar from '../../components/Calendar';
-
-function clientDisplay(c) {
-  const u = c.user || c;
-  return `${u.name || ''} ${u.lastName || ''}`.trim();
-}
 
 export default function CoachCalendarPage() {
   const { user } = useAuth();
@@ -29,14 +25,10 @@ export default function CoachCalendarPage() {
       setClients(cList);
       setRoutines(routinesRes.data || []);
 
-      let allPw = [];
-      for (const c of cList) {
-        try {
-          const pw = await plannedWorkoutsApi.listByClient(c.id);
-          allPw = allPw.concat(pw.data || []);
-        } catch (_) {}
-      }
-      setPlannedWorkouts(allPw);
+      const pwResults = await Promise.all(
+        cList.map((c) => plannedWorkoutsApi.listByClient(c.id).then((r) => r.data || []).catch(() => []))
+      );
+      setPlannedWorkouts(pwResults.flat());
     } catch (_) {}
     setLoading(false);
   };
@@ -110,7 +102,7 @@ export default function CoachCalendarPage() {
         <h2>Calendario de planificación</h2>
         <Form.Select style={{ maxWidth: 220 }} value={filterClient} onChange={e => setFilterClient(e.target.value)}>
           <option value="">Todos mis alumnos</option>
-          {clients.map(c => <option key={c.id} value={c.id}>{clientDisplay(c)}</option>)}
+          {clients.map(c => <option key={c.id} value={c.id}>{clientDisplayName(c)}</option>)}
         </Form.Select>
       </div>
 
@@ -133,7 +125,7 @@ export default function CoachCalendarPage() {
           <Form.Group className="mb-3">
             <Form.Label>Alumno</Form.Label>
             <Form.Select value={assignData.clientId} onChange={e => setAssignData(d => ({ ...d, clientId: e.target.value }))}>
-              {clients.map(c => <option key={c.id} value={c.id}>{clientDisplay(c)}</option>)}
+              {clients.map(c => <option key={c.id} value={c.id}>{clientDisplayName(c)}</option>)}
             </Form.Select>
           </Form.Group>
           <Form.Group className="mb-3">

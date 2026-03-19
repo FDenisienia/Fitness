@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { authApi } from '../api/auth.js';
 
 const TOKEN_KEY = 'fitcoach_token';
 const USER_KEY = 'fitcoach_user';
-export { TOKEN_KEY };
 
 const AuthContext = createContext(null);
 
@@ -67,7 +66,10 @@ export function AuthProvider({ children }) {
     } catch (_) {}
   };
 
-  const value = { user, loading, login, logout, register, updateUser, refreshUser };
+  const value = useMemo(
+    () => ({ user, loading, login, logout, register, updateUser, refreshUser }),
+    [user, loading]
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

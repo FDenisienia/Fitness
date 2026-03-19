@@ -4,6 +4,7 @@ import { Card, Table, Button, Modal, Form, Row, Col, Spinner, Alert } from 'reac
 import { useAuth } from '../../context/AuthContext';
 import { routinesApi, clientsApi, exercisesApi, clientRoutinesApi } from '../../api';
 import { OBJECTIVES, LEVELS, STIMULUS_TYPES } from '../../data/mockData';
+import { clientDisplayName } from '../../utils/clientDisplay';
 import ExerciseAutocomplete from '../../components/ExerciseAutocomplete';
 
 const getEmptyExercise = () => ({
@@ -205,11 +206,6 @@ export default function CoachRoutinesPage() {
     }
   };
 
-  const clientDisplay = (c) => {
-    const u = c.user || c;
-    return `${u.name || ''} ${u.lastName || ''}`.trim();
-  };
-
   if (loading) {
     return (
       <div className="d-flex justify-content-center py-5">
@@ -242,7 +238,7 @@ export default function CoachRoutinesPage() {
                 <td><strong>{r.name}</strong></td>
                 <td>{r.objective || '-'}</td>
                 <td>{r.level || '-'}</td>
-                <td>{getAssignedClients(r.id).map(c => clientDisplay(c)).join(', ') || '-'}</td>
+                <td>{getAssignedClients(r.id).map(c => clientDisplayName(c)).join(', ') || '-'}</td>
                 <td>
                   <Button size="sm" variant="outline-primary" className="me-1" as={Link} to={`/coach/rutinas/${r.id}`}>Ver</Button>
                   {canEditRoutine(r) && (
@@ -357,7 +353,7 @@ export default function CoachRoutinesPage() {
             <Form.Select value={assignClient} onChange={e => setAssignClient(e.target.value)}>
               <option value="">Seleccionar cliente</option>
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{clientDisplay(c)}</option>
+                <option key={c.id} value={c.id}>{clientDisplayName(c)}</option>
               ))}
             </Form.Select>
           </Form.Group>

@@ -32,4 +32,3 @@ export const api = {
   delete: (path) => request(path, { method: 'DELETE' }),
 };
 
-export { API_URL, getToken };

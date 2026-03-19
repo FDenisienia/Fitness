@@ -1,23 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { store, generateId } from '../data/mockData';
+import { formatMessageTime, formatMessageDate } from '../utils/chatFormatters';
 import '../styles/chat.css';
-
-function formatMessageTime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  if (isToday) return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
-  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-}
-
-function formatMessageDate(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 export default function ChatInbox({ currentUser, role, conversations = [], singleConversation = null, onUpdate, embedded }) {
   const [selectedConv, setSelectedConv] = useState(singleConversation?.id ?? (conversations[0]?.id ?? null));

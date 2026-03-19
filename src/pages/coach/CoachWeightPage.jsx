@@ -4,13 +4,9 @@ import { Card, Table, Button, Modal, Form, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { usePlan } from '../../context/PlanContext';
 import { clientsApi, weightLogsApi } from '../../api';
+import { clientDisplay } from '../../utils/clientDisplay';
 import WeightChart from '../../components/weight/WeightChart';
 import WeightSummary from '../../components/weight/WeightSummary';
-
-function clientDisplay(c) {
-  const u = c.user || c;
-  return { name: u.name, lastName: u.lastName };
-}
 
 export default function CoachWeightPage() {
   const { user } = useAuth();
@@ -31,13 +27,11 @@ export default function CoachWeightPage() {
         const clientsRes = await clientsApi.list();
         const cList = clientsRes.data || [];
         setClients(cList);
-        const recMap = {};
-        for (const c of cList) {
-          try {
-            const wr = await weightLogsApi.listByClient(c.id);
-            recMap[c.id] = wr.data || [];
-          } catch (_) {}
-        }
+        const weightPromises = cList.map((c) =>
+          weightLogsApi.listByClient(c.id).then((r) => ({ id: c.id, data: r.data || [] })).catch(() => ({ id: c.id, data: [] }))
+        );
+        const results = await Promise.all(weightPromises);
+        const recMap = Object.fromEntries(results.map((r) => [r.id, r.data]));
         setRecords(recMap);
       } catch (_) {}
       setLoading(false);

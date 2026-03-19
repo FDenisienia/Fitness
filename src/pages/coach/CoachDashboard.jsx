@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePlan } from '../../context/PlanContext';
 import { clientsApi, routinesApi, plannedWorkoutsApi, weightLogsApi } from '../../api';
+import { clientDisplay, getInitials } from '../../utils/clientDisplay';
 
 function IconUsers() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>; }
 function IconRoutines() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>; }
@@ -12,15 +13,6 @@ function IconCalendar() { return <svg width="20" height="20" viewBox="0 0 24 24"
 function IconPlus() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
 function IconUserPlus() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>; }
 function IconBell() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>; }
-
-function getInitials(name, lastName) {
-  return [name?.[0] || '', lastName?.[0] || ''].filter(Boolean).join('').toUpperCase().slice(0, 2) || '?';
-}
-
-function clientDisplay(c) {
-  const u = c.user || c;
-  return { name: u.name, lastName: u.lastName };
-}
 
 export default function CoachDashboard() {
   const { user } = useAuth();
@@ -39,18 +31,15 @@ export default function CoachDashboard() {
         setClients(cList);
         setRoutines(routinesRes.data || []);
 
-        let allPw = [];
-        const wrMap = {};
-        for (const c of cList) {
-          try {
-            const [pw, wr] = await Promise.all([
-              plannedWorkoutsApi.listByClient(c.id),
-              weightLogsApi.listByClient(c.id),
-            ]);
-            allPw = allPw.concat(pw.data || []);
-            wrMap[c.id] = wr.data || [];
-          } catch (_) {}
-        }
+        const clientDataPromises = cList.map((c) =>
+          Promise.all([
+            plannedWorkoutsApi.listByClient(c.id).catch(() => ({ data: [] })),
+            weightLogsApi.listByClient(c.id).catch(() => ({ data: [] })),
+          ]).then(([pw, wr]) => ({ id: c.id, pw: pw.data || [], wr: wr.data || [] }))
+        );
+        const clientData = await Promise.all(clientDataPromises);
+        const allPw = clientData.flatMap((d) => d.pw);
+        const wrMap = Object.fromEntries(clientData.map((d) => [d.id, d.wr]));
         setPlannedWorkouts(allPw);
         setWeightRecords(wrMap);
       } catch (_) {}

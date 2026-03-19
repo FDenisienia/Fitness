@@ -8,6 +8,9 @@ const navItems = {
   admin: [
     { to: '/admin', label: 'Dashboard', exact: true },
     { to: '/admin/coaches', label: 'Coaches (clientes)' },
+    { to: '/admin/alumnos', label: 'Alumnos' },
+    { to: '/admin/usuarios', label: 'Usuarios' },
+    { to: '/admin/rutinas', label: 'Rutinas' },
     { to: '/admin/planes', label: 'Planes y cobros' },
     { to: '/admin/biblioteca-ejercicios', label: 'Biblioteca global' },
     { to: '/admin/consultas', label: 'Soporte / Consultas' }

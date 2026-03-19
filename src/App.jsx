@@ -17,6 +17,9 @@ import CoachesPage from './pages/admin/CoachesPage';
 import AdminPlansPage from './pages/admin/AdminPlansPage';
 import ExerciseLibraryPage from './pages/admin/ExerciseLibraryPage';
 import ConsultationsPage from './pages/admin/ConsultationsPage';
+import ClientsPage from './pages/admin/ClientsPage';
+import UsersPage from './pages/admin/UsersPage';
+import RoutinesPage from './pages/admin/RoutinesPage';
 
 import CoachDashboard from './pages/coach/CoachDashboard';
 import CoachClientsPage from './pages/coach/CoachClientsPage';
@@ -62,7 +65,9 @@ export default function App() {
         }>
           <Route index element={<AdminDashboard />} />
           <Route path="coaches" element={<CoachesPage />} />
-          <Route path="alumnos" element={<Navigate to="/admin" replace />} />
+          <Route path="alumnos" element={<ClientsPage />} />
+          <Route path="usuarios" element={<UsersPage />} />
+          <Route path="rutinas" element={<RoutinesPage />} />
           <Route path="planes" element={<AdminPlansPage />} />
           <Route path="biblioteca-ejercicios" element={<ExerciseLibraryPage />} />
           <Route path="consultas" element={<ConsultationsPage />} />

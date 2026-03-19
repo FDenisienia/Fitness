@@ -1,4 +1,4 @@
-export { api, getToken, API_URL } from './client.js';
+export { api } from './client.js';
 export { authApi } from './auth.js';
 export { usersApi } from './users.js';
 export { coachesApi } from './coaches.js';
