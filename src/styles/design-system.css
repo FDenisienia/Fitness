@@ -46,6 +46,13 @@
   --mobile-header-touch: var(--touch-min); /* 44px área táctil */
   --mobile-header-logo-height: 7.5rem; /* 120px - logo grande, desborda el header */
   --mobile-header-icon-size: 1.5rem; /* 24px ícono hamburguesa */
+
+  /* iOS Safari - viewport y safe areas (requiere viewport-fit=cover en meta) */
+  --ios-safari-bottom: 70px; /* barra inferior Safari en iPhone - espacio para no tapar CTAs */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --viewport-height: 100vh; /* fallback para navegadores sin dvh */
+  --viewport-height-dynamic: 100dvh;
+  --viewport-height-small: 100svh;
 }
 
 /* Tablet */

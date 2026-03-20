@@ -274,6 +274,7 @@ a {
 .sidebar {
   background: var(--bg-card);
   min-height: 100vh;
+  min-height: 100dvh;
   width: 260px;
   position: fixed;
   left: 0;
@@ -314,8 +315,10 @@ a {
 }
 
 .sidebar-nav {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-footer {
@@ -332,6 +335,7 @@ a {
 .main-content {
   margin-left: 260px;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--space-4);
   background: var(--bg-root);
   transition: margin-left 0.3s ease;
@@ -492,16 +496,18 @@ a {
     opacity: 1;
     pointer-events: auto;
   }
+  /* Sidebar: empieza bajo header, altura = viewport - header - barra Safari (para que Cerrar sesión quede visible) */
   .sidebar {
     top: var(--mobile-header-height);
+    left: 0;
     width: 280px;
     max-width: 85vw;
-    height: calc(100vh - var(--mobile-header-height));
-    height: calc(100dvh - var(--mobile-header-height));
-    max-height: calc(100dvh - var(--mobile-header-height));
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overflow-x: hidden;
+    height: calc(100vh - var(--mobile-header-height) - env(safe-area-inset-bottom, 0px) - var(--ios-safari-bottom));
+    height: calc(100dvh - var(--mobile-header-height) - env(safe-area-inset-bottom, 0px) - var(--ios-safari-bottom));
+    max-height: calc(100dvh - var(--mobile-header-height) - env(safe-area-inset-bottom, 0px) - var(--ios-safari-bottom));
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     transform: translateX(-100%);
   }
   .sidebar.sidebar-open {
@@ -511,8 +517,12 @@ a {
     display: none;
   }
   .sidebar-nav {
+    flex: 1 1 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding-top: 1rem;
     padding-bottom: 0.5rem;
     padding-left: 0.75rem;
@@ -530,8 +540,9 @@ a {
   }
   .sidebar-footer {
     padding: 0.85rem 1.25rem;
-    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px) + 70px);
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
+    border-top: 0.5px solid var(--border-subtle);
   }
   .sidebar-footer .btn {
     min-height: var(--touch-min);
@@ -540,7 +551,10 @@ a {
     margin-left: 0;
     padding: var(--space-4);
     padding-top: var(--page-padding-top-mobile);
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px) + var(--ios-safari-bottom));
     width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 

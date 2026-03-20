@@ -878,7 +878,9 @@
 .modal.routine-form-modal .modal-body {
   padding: 1.75rem 2rem;
   max-height: calc(100vh - 180px);
+  max-height: calc(100dvh - 180px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal.routine-form-modal .form-label {
