@@ -8,7 +8,7 @@
 }
 
 .athlento-logo--full {
-  background: #F5F5F5;
+  background: #000000;
   padding: 1rem 1.5rem;
   border-radius: var(--radius-md);
 }
@@ -36,7 +36,7 @@
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 1.25rem;
-  color: #FF5500;
+  color: #FFFFFF;
   letter-spacing: -0.02em;
 }
 
@@ -50,13 +50,13 @@
 }
 
 .landing-footer-brand .athlento-logo--full {
-  background: rgba(245, 245, 245, 0.15);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .landing-footer-brand:hover .athlento-logo--full {
-  background: rgba(245, 245, 245, 0.25);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .landing-footer-brand .athlento-logo-text {
-  color: #FF5500;
+  color: #FFFFFF;
 }
