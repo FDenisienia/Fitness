@@ -826,6 +826,29 @@ html {
   margin-left: auto;
 }
 
+/* Logo centrado en navbar móvil (landing, login, registro) */
+@media (max-width: 991px) {
+  .navbar-landing .container {
+    position: relative;
+  }
+  .navbar-landing .navbar-brand {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .navbar-landing .navbar-toggler {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@media (min-width: 992px) {
+  .navbar-landing .navbar-brand {
+    position: static;
+    transform: none;
+  }
+}
+
 /* Mobile First adjustments */
 @media (max-width: 767px) {
   .landing-hero {

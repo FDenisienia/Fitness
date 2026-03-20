@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Logo Athlento - icono estilizado A con swoosh naranja
- * Diseño: fondo blanco/gris claro + naranja (#FF5C00)
+ * Logo Athlento - A estilizada: blanco + naranja (#FF5500)
+ * Base blanca con cutout, swoosh naranja curvo + pata derecha
  */
 function LogoIcon({ className, size = 48 }) {
   return (
@@ -13,15 +13,15 @@ function LogoIcon({ className, size = 48 }) {
       className={className}
       aria-hidden="true"
     >
-      {/* Base blanca: A con triángulo superior y pata izquierda */}
+      {/* Base blanca: A con triángulo y cutout central (barra horizontal) */}
       <path
         fill="#FFFFFF"
-        d="M24 2 L6 54 L16 54 L22 32 L26 32 L32 54 L42 54 Z M20 24 L28 24 L24 16 Z"
+        d="M24 0 L4 56 L18 56 L22 36 L26 36 L30 56 L44 56 Z M20 26 L28 26 L24 18 Z"
       />
-      {/* Swoosh naranja: arco dinámico + pata derecha del A */}
+      {/* Swoosh naranja: arco curvo ascendente + pata diagonal derecha */}
       <path
-        fill="var(--orange, #FF5C00)"
-        d="M14 52 Q24 8 42 4 L38 22 Q24 26 18 48 Z"
+        fill="#FF5500"
+        d="M10 48 Q24 4 44 2 L40 20 Q26 24 20 44 L18 54 L28 54 Z"
       />
     </svg>
   );
@@ -29,30 +29,16 @@ function LogoIcon({ className, size = 48 }) {
 
 /**
  * Logo completo: icono + texto "Athlento"
- * Variante: full (fondo negro, centrado) | inline (para navbar)
+ * Colores: blanco + naranja #FF5500, fondo gris claro #F5F5F5
  */
-export default function AthlentoLogo({ variant = 'full', size = 'md', className = '' }) {
-  const iconSizes = { sm: 28, md: 36, lg: 48 };
+export default function AthlentoLogo({ size = 'md', className = '' }) {
+  const iconSizes = { xs: 20, sm: 28, md: 36, lg: 48 };
   const iconSize = iconSizes[size] ?? iconSizes.md;
-
-  const content = (
-    <>
-      <LogoIcon size={iconSize} />
-      <span className="athlento-logo-text">Athlento</span>
-    </>
-  );
-
-  if (variant === 'inline') {
-    return (
-      <div className={`athlento-logo athlento-logo--inline ${className}`}>
-        {content}
-      </div>
-    );
-  }
 
   return (
     <div className={`athlento-logo athlento-logo--full ${className}`}>
-      {content}
+      <LogoIcon size={iconSize} />
+      <span className="athlento-logo-text">Athlento</span>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export default function PublicLayout() {
         >
           <Container fluid className="px-3 px-lg-4">
             <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
-              <AthlentoLogo variant="full" size="sm" />
+              <AthlentoLogo size="xs" />
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="public-nav" />
             <Navbar.Collapse id="public-nav" className="navbar-landing-collapse">
@@ -67,7 +67,7 @@ export default function PublicLayout() {
       <Navbar expand="lg" className="navbar-landing py-3" collapseOnSelect>
         <Container fluid className="px-3 px-lg-4">
           <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
-            <AthlentoLogo variant="full" size="sm" />
+            <AthlentoLogo size="xs" />
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="public-nav" />
           <Navbar.Collapse id="public-nav" className="justify-content-end">

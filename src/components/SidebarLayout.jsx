@@ -78,7 +78,7 @@ export default function SidebarLayout({ basePath, role }) {
         aria-hidden="true"
       />
 
-      {/* Header móvil - ancho completo, sin superposiciones */}
+      {/* Header móvil - ancho completo, logo centrado */}
       <header className="mobile-header">
         <button
           type="button"
@@ -91,12 +91,15 @@ export default function SidebarLayout({ basePath, role }) {
           <span className="sidebar-toggle-bar" />
           <span className="sidebar-toggle-bar" />
         </button>
-        <AthlentoLogo variant="full" size="sm" className="mobile-header-brand" />
+        <div className="mobile-header-brand-wrap">
+          <AthlentoLogo size="xs" className="mobile-header-brand" />
+        </div>
+        <div className="mobile-header-spacer" aria-hidden="true" />
       </header>
 
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          <AthlentoLogo variant="full" size="sm" />
+          <AthlentoLogo size="sm" />
         </div>
         <Nav className="flex-column sidebar-nav py-3">
           {items.map(({ to, label, exact }) => (

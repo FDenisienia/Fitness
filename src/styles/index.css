@@ -342,11 +342,24 @@ a {
   border-bottom: 0.5px solid var(--border-subtle);
 }
 
+.mobile-header-brand-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+}
+
 .mobile-header-brand {
   color: var(--white-pure);
   font-weight: 700;
   font-size: 1.1rem;
   font-family: var(--font-display);
+}
+
+.mobile-header-spacer {
+  width: var(--touch-min);
+  flex-shrink: 0;
 }
 
 .sidebar-toggle {
