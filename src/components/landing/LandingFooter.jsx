@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
+import AthlentoLogo from '../AthlentoLogo';
 
 const FOOTER_LINKS = [
   { to: '#funcionalidades', label: 'Funcionalidades' },
@@ -30,8 +31,8 @@ export default function LandingFooter() {
       <Container>
         <Row className="landing-footer-row">
           <Col md={4} className="mb-4 mb-md-0">
-            <Link to="/" className="landing-footer-brand">
-              Athlento
+            <Link to="/" className="landing-footer-brand d-inline-flex">
+              <AthlentoLogo variant="full" size="sm" />
             </Link>
             <p className="landing-footer-tagline">
               Sistema de gestión de entrenamientos para coaches profesionales.
@@ -66,7 +67,7 @@ export default function LandingFooter() {
           <Col md={4}>
             <h5 className="landing-footer-heading">Contacto</h5>
             <p className="landing-footer-contact mb-0">
-              <a href="mailto:hola@fitcoachpro.com">hola@fitcoachpro.com</a>
+              <a href="mailto:hola@athlento.com">hola@athlento.com</a>
             </p>
           </Col>
         </Row>

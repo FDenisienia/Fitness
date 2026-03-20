@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Nav } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
+import AthlentoLogo from './AthlentoLogo';
 
 const navItems = {
   admin: [
@@ -90,12 +91,12 @@ export default function SidebarLayout({ basePath, role }) {
           <span className="sidebar-toggle-bar" />
           <span className="sidebar-toggle-bar" />
         </button>
-        <span className="mobile-header-brand">Athlento</span>
+        <AthlentoLogo variant="full" size="sm" className="mobile-header-brand" />
       </header>
 
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          <span>Athlento</span>
+          <AthlentoLogo variant="full" size="sm" />
         </div>
         <Nav className="flex-column sidebar-nav py-3">
           {items.map(({ to, label, exact }) => (
