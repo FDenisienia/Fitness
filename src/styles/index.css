@@ -495,14 +495,31 @@ a {
   .sidebar {
     width: 280px;
     max-width: 85vw;
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
     transform: translateX(-100%);
   }
   .sidebar.sidebar-open {
     transform: translateX(0);
   }
+  .sidebar-brand {
+    padding: 1rem 1.25rem;
+    flex-shrink: 0;
+  }
+  .sidebar-nav {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
   .sidebar .nav-link {
-    padding: 0.85rem 1.25rem;
+    padding: 0.65rem 1.25rem;
     min-height: var(--touch-min);
+  }
+  .sidebar-footer {
+    padding: 0.85rem 1.25rem;
+    flex-shrink: 0;
   }
   .sidebar-footer .btn {
     min-height: var(--touch-min);
