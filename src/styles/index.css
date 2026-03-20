@@ -338,11 +338,15 @@ a {
   overflow-x: hidden;
 }
 
-/* Header móvil */
+/* Header móvil - mismo estándar UX que landing */
 .mobile-header {
   display: none;
   background: var(--bg-card);
-  border-bottom: 0.5px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: var(--mobile-header-height);
+  padding: var(--mobile-header-padding-y) var(--mobile-header-padding-x);
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .mobile-header-brand-wrap {
@@ -351,7 +355,6 @@ a {
   justify-content: center;
   align-items: center;
   min-width: 0;
-  transform: translateX(-0.75rem);
 }
 
 .mobile-header-brand {
@@ -362,7 +365,8 @@ a {
 }
 
 .mobile-header-spacer {
-  width: var(--touch-min);
+  width: var(--mobile-header-touch);
+  min-width: var(--mobile-header-touch);
   flex-shrink: 0;
 }
 
@@ -384,8 +388,9 @@ a {
   transition: background 0.2s ease;
 }
 
+.sidebar-toggle:hover,
 .sidebar-toggle:active {
-  background: var(--white-ghost);
+  background: transparent;
 }
 
 .sidebar-toggle-bar {
@@ -421,21 +426,61 @@ a {
   transition: opacity 0.3s ease;
 }
 
-/* Mobile */
+/* Mobile - header con criterio senior UX */
 @media (max-width: 639px) {
   .mobile-header {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 1rem;
+    justify-content: space-between;
+    gap: var(--space-2);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     width: 100%;
-    min-height: 3rem;
-    padding: 0.25rem 1rem;
+    min-height: var(--mobile-header-height);
+    padding: max(var(--mobile-header-padding-y), env(safe-area-inset-top, 0)) var(--mobile-header-padding-x) var(--mobile-header-padding-y);
     z-index: 1002;
     box-sizing: border-box;
+    overflow: visible;
+  }
+  /* Hamburger: área táctil 44x44, ícono ~24px */
+  .mobile-header .sidebar-toggle {
+    width: var(--mobile-header-touch);
+    height: var(--mobile-header-touch);
+    min-width: var(--mobile-header-touch);
+    min-height: var(--mobile-header-touch);
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+  }
+  .mobile-header .sidebar-toggle:hover,
+  .mobile-header .sidebar-toggle:active {
+    background: transparent;
+  }
+  .mobile-header .sidebar-toggle-bar {
+    width: 22px;
+    height: 2.5px;
+  }
+  .mobile-header .sidebar-toggle--open .sidebar-toggle-bar:nth-child(1) {
+    transform: translateY(7.5px) rotate(45deg);
+  }
+  .mobile-header .sidebar-toggle--open .sidebar-toggle-bar:nth-child(3) {
+    transform: translateY(-7.5px) rotate(-45deg);
+  }
+  .mobile-header .athlento-logo {
+    padding: 0 !important;
+    transform: none !important;
+    margin-top: -1.75rem;
+    margin-bottom: -1.75rem;
+  }
+  .mobile-header .athlento-logo img {
+    max-height: var(--mobile-header-logo-height);
+    width: auto;
+    object-fit: contain;
+  }
+  .mobile-header .mobile-header-spacer {
+    width: var(--mobile-header-touch);
   }
   .sidebar-toggle {
     display: flex;

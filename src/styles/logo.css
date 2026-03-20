@@ -12,17 +12,7 @@
   object-fit: contain;
 }
 
-/* Hace que el negro del PNG se funda con el fondo del header */
-.navbar-brand .athlento-logo-img,
-.navbar-landing-brand .athlento-logo-img,
-.navbar-landing-block--center .athlento-logo-img,
-.navbar-landing-brand-mobile .athlento-logo-img,
-.navbar-landing-brand .athlento-logo-img,
-.mobile-header .athlento-logo-img,
-.sidebar-brand .athlento-logo-img,
-.landing-footer-brand .athlento-logo-img {
-  mix-blend-mode: lighten;
-}
+/* PNG con transparencia - sin mix-blend-mode para evitar artefactos */
 
 .athlento-logo--full {
   background: var(--bg-root);
@@ -30,22 +20,25 @@
   border-radius: var(--radius-md);
 }
 
-/* Logo en header: mismo fondo que el header */
+/* Logo en header: fondo transparente para fundirse con el header */
+.navbar-landing-brand-mobile .athlento-logo,
+.navbar-landing-brand .athlento-logo,
+.navbar-landing-block--center .athlento-logo,
 .navbar-brand .athlento-logo,
 .mobile-header .athlento-logo,
+.mobile-header .athlento-logo--full,
 .sidebar-brand .athlento-logo {
-  background: var(--bg-root) !important;
-  padding: 0.35rem 0.6rem;
+  background: transparent !important;
+  padding: 0.5rem 0.9rem;
   gap: 0.25rem;
   flex-shrink: 0;
+  border-radius: 0;
 }
 
 .navbar-brand .athlento-logo--full,
 .mobile-header .athlento-logo--full,
 .sidebar-brand .athlento-logo--full {
-  background: var(--bg-root) !important;
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius-md);
+  padding: 0.4rem 0.75rem;
 }
 
 /* Logo horizontal (sidebar, footer, etc.) */
@@ -90,9 +83,9 @@
 
 .landing-footer-brand .athlento-logo--full {
   background: var(--bg-root) !important;
-  padding: 0.3rem 0.5rem;
+  padding: 0.5rem 0.9rem;
   gap: 0.25rem;
-  transform: scale(0.75);
+  transform: scale(1);
   transform-origin: left center;
 }
 
@@ -105,33 +98,11 @@
   font-size: 1.15rem;
 }
 
-/* Header mobile: logo vertical (icono arriba, Athlento abajo), Athlento más a la izquierda */
+/* Header mobile: logo más grande (no aplica a navbar-landing-mobile ni mobile-header, tienen estilos compactos propios) */
 @media (max-width: 991px) {
-  .navbar-landing-brand-mobile .athlento-logo,
   .navbar-landing-brand .athlento-logo {
-    flex-direction: column;
-    gap: 0.15rem;
-    align-items: center;
-    transform: scale(0.85);
+    transform: scale(1.05);
     transform-origin: center center;
-    padding: 0.2rem 0.4rem;
-  }
-  .navbar-landing-brand-mobile .athlento-logo-text,
-  .navbar-landing-brand .athlento-logo-text {
-    margin-left: -1.3rem;
-  }
-}
-
-@media (max-width: 639px) {
-  .mobile-header .athlento-logo {
-    flex-direction: column;
-    gap: 0.15rem;
-    align-items: center;
-    transform: scale(0.85);
-    transform-origin: center center;
-    padding: 0.2rem 0.4rem;
-  }
-  .mobile-header .athlento-logo-text {
-    margin-left: -1.3rem;
+    padding: 0.4rem 0.75rem;
   }
 }

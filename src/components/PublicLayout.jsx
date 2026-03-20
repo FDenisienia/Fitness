@@ -93,7 +93,7 @@ export default function PublicLayout() {
             </div>
           </div>
 
-          {/* Mobile: hamburguesa + logo centrado */}
+          {/* Mobile: hamburguesa | logo centrado | spacer (distribución balanceada) */}
           <div className="navbar-landing-mobile">
             <button
               type="button"
@@ -109,6 +109,7 @@ export default function PublicLayout() {
             <Link to="/" className="navbar-landing-brand-mobile">
               <AthlentoLogo size="xs" layout="horizontal" />
             </Link>
+            <div className="navbar-landing-spacer-mobile" aria-hidden="true" />
           </div>
 
           {/* Dropdown móvil */}

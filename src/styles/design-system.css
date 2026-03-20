@@ -37,7 +37,15 @@
   /* Page container padding - mobile first */
   --page-padding-x: var(--space-4);
   --page-padding-y: var(--space-4);
-  --page-padding-top-mobile: 4.5rem; /* espacio para mobile header */
+  --page-padding-top-mobile: 6rem; /* espacio: header 72px + logo que desborda */
+
+  /* Mobile header - estándares UX */
+  --mobile-header-height: 4.5rem;   /* 72px - sólido */
+  --mobile-header-padding-x: 1rem;  /* 16px */
+  --mobile-header-padding-y: 0.75rem; /* 12px */
+  --mobile-header-touch: var(--touch-min); /* 44px área táctil */
+  --mobile-header-logo-height: 7.5rem; /* 120px - logo grande, desborda el header */
+  --mobile-header-icon-size: 1.5rem; /* 24px ícono hamburguesa */
 }
 
 /* Tablet */
