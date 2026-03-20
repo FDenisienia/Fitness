@@ -8,6 +8,10 @@ import { errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
 
+// Necesario cuando la API está detrás de un proxy (Docker, Railway, etc.)
+// para que express-rate-limit use correctamente X-Forwarded-For
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
