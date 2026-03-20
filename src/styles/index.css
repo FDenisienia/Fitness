@@ -286,6 +286,14 @@ a {
   border-right: 0.5px solid var(--border-subtle);
 }
 
+.sidebar-drawer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .sidebar-brand {
   font-family: 'Space Mono', monospace;
   font-weight: 700;
@@ -422,15 +430,20 @@ a {
 .sidebar-overlay {
   display: none;
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1000;
   background: rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
 }
 
-/* Mobile - header con criterio senior UX */
+/* ===== MOBILE DRAWER - iOS Safari optimizado ===== */
 @media (max-width: 639px) {
   .mobile-header {
     display: flex;
@@ -496,37 +509,47 @@ a {
     opacity: 1;
     pointer-events: auto;
   }
-  /* Sidebar: empieza bajo header, altura = viewport - header - barra Safari (para que Cerrar sesión quede visible) */
+
+  /* Drawer: 100svh = viewport pequeño (Safari bar visible), evita que quede tapado por la barra inferior */
   .sidebar {
     top: var(--mobile-header-height);
     left: 0;
-    width: 280px;
-    max-width: 85vw;
-    height: calc(100vh - var(--mobile-header-height) - env(safe-area-inset-bottom, 0px) - var(--ios-safari-bottom));
-    height: calc(100dvh - var(--mobile-header-height) - env(safe-area-inset-bottom, 0px) - var(--ios-safari-bottom));
-    max-height: calc(100dvh - var(--mobile-header-height) - env(safe-area-inset-bottom, 0px) - var(--ios-safari-bottom));
-    overflow: hidden;
+    width: min(280px, 85vw);
+    height: calc(100vh - var(--mobile-header-height));
+    height: calc(100svh - var(--mobile-header-height));
+    max-height: calc(100svh - var(--mobile-header-height));
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
   }
   .sidebar.sidebar-open {
     transform: translateX(0);
   }
-  .sidebar-brand {
-    display: none;
-  }
-  .sidebar-nav {
-    flex: 1 1 0;
+
+  .sidebar-drawer {
+    flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-brand {
+    display: none;
+  }
+
+  /* Navegación: scroll interno, footer siempre visible */
+  .sidebar-nav {
+    flex: 1 1 0;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-top: 1rem;
-    padding-bottom: 0.5rem;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0.75rem 0.5rem;
     gap: 0.25rem;
   }
   .sidebar-nav .nav-link {
@@ -538,15 +561,20 @@ a {
     border-radius: var(--radius-md);
     box-sizing: border-box;
   }
+
+  /* Footer fijo: Cerrar sesión siempre visible, safe-area para iPhone */
   .sidebar-footer {
-    padding: 0.85rem 1.25rem;
-    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
+    padding: 1rem 1.25rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     border-top: 0.5px solid var(--border-subtle);
+    background: var(--bg-card);
   }
   .sidebar-footer .btn {
     min-height: var(--touch-min);
   }
+
+  /* Main: padding inferior para que el contenido no quede bajo la barra Safari al hacer scroll */
   .main-content {
     margin-left: 0;
     padding: var(--space-4);
@@ -554,7 +582,8 @@ a {
     padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px) + var(--ios-safari-bottom));
     width: 100%;
     min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100svh;
+    box-sizing: border-box;
   }
 }
 

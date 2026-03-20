@@ -97,27 +97,30 @@ export default function SidebarLayout({ basePath, role }) {
         <div className="mobile-header-spacer" aria-hidden="true" />
       </header>
 
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-brand">
-          <AthlentoLogo size="sm" />
-        </div>
-        <Nav className="flex-column sidebar-nav py-3">
-          {items.map(({ to, label, exact }) => (
-            <Nav.Link
-              key={to}
-              as={Link}
-              to={to}
-              className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
-            >
-              {label}
-            </Nav.Link>
-          ))}
-        </Nav>
-        <div className="sidebar-footer">
-          <div className="text-white-50 small mb-2">{user?.name} {user?.lastName}</div>
-          <button type="button" className="btn btn-outline-light btn-sm w-100" onClick={handleLogout}>
-            Cerrar sesión
-          </button>
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} aria-hidden={!sidebarOpen}>
+        <div className="sidebar-drawer">
+          <div className="sidebar-brand">
+            <AthlentoLogo size="sm" />
+          </div>
+          <nav className="sidebar-nav flex-column" aria-label="Navegación principal">
+            {items.map(({ to, label, exact }) => (
+              <Nav.Link
+                key={to}
+                as={Link}
+                to={to}
+                className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
+                onClick={closeSidebar}
+              >
+                {label}
+              </Nav.Link>
+            ))}
+          </nav>
+          <div className="sidebar-footer">
+            <div className="text-white-50 small mb-2">{user?.name} {user?.lastName}</div>
+            <button type="button" className="btn btn-outline-light btn-sm w-100" onClick={handleLogout}>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </aside>
       <main className="main-content flex-grow-1">
