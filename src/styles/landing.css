@@ -785,12 +785,13 @@ html {
   font-weight: 700;
   color: var(--orange);
   display: inline-block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .landing-footer-tagline {
   font-size: 0.9rem;
   color: var(--white-dim);
+  margin-top: -2rem;
   margin-bottom: 1rem;
   max-width: 280px;
   line-height: 1.5;
@@ -848,6 +849,39 @@ html {
   font-size: 0.85rem;
   color: var(--white-dim);
   text-align: center;
+}
+
+@media (max-width: 767px) {
+  .landing-footer-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .landing-footer-row > [class*="col"] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .landing-footer-brand {
+    justify-content: center;
+  }
+  .landing-footer-tagline {
+    max-width: none;
+    text-align: center;
+  }
+  .landing-footer-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .landing-footer-heading {
+    text-align: center;
+  }
+  .landing-footer-contact {
+    text-align: center;
+  }
 }
 
 /* ===== NAVBAR LANDING - Estructura 3 bloques (SaaS profesional) ===== */
