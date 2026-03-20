@@ -1,4 +1,4 @@
-# Guía de despliegue - FitCoach Pro
+# Guía de despliegue - Athlento
 
 Guía completa para conectar el proyecto a GitHub, desplegar en Netlify (frontend) y Railway (backend + MySQL), y crear las tablas de la base de datos.
 
@@ -60,7 +60,7 @@ cd c:\Users\fedel\OneDrive\Escritorio\App-Nico
 git add .
 
 # Primer commit
-git commit -m "Initial commit - FitCoach Pro full-stack"
+git commit -m "Initial commit - Athlento full-stack"
 
 # Añadir el remoto (reemplaza TU_USUARIO y TU_REPO con tus datos)
 git remote add origin https://github.com/TU_USUARIO/TU_REPO.git

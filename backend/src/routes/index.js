@@ -24,7 +24,7 @@ router.use('/planned-workouts', plannedWorkoutRoutes);
 router.use('/stats', statsRoutes);
 
 router.get('/health', (req, res) => {
-  res.json({ success: true, message: 'FitCoach API OK' });
+  res.json({ success: true, message: 'Athlento API OK' });
 });
 
 export default router;

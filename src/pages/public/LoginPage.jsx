@@ -41,7 +41,7 @@ export default function LoginPage() {
           <Card.Body>
             <div className="text-center mb-4">
               <h2 className="fw-bold">Iniciar sesión</h2>
-              <p className="text-muted">Accede a tu cuenta de FitCoach Pro</p>
+              <p className="text-muted">Accede a tu cuenta de Athlento</p>
             </div>
             {error && <Alert variant="danger">{error}</Alert>}
             <Form onSubmit={handleSubmit}>

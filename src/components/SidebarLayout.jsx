@@ -90,12 +90,12 @@ export default function SidebarLayout({ basePath, role }) {
           <span className="sidebar-toggle-bar" />
           <span className="sidebar-toggle-bar" />
         </button>
-        <span className="mobile-header-brand">FitCoach Pro</span>
+        <span className="mobile-header-brand">Athlento</span>
       </header>
 
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          <span>FitCoach Pro</span>
+          <span>Athlento</span>
         </div>
         <Nav className="flex-column sidebar-nav py-3">
           {items.map(({ to, label, exact }) => (

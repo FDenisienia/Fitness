@@ -9,7 +9,7 @@ export default function LandingHero() {
       <div className="landing-hero-bg" aria-hidden="true" />
       <Container>
         <Row className="align-items-center min-vh-75">
-          <Col lg={6} className="order-lg-1 order-2">
+          <Col lg={6} className="order-lg-1 order-1">
             <motion.h1
               className="landing-hero-title"
               initial={{ opacity: 0, y: 30 }}
@@ -40,7 +40,7 @@ export default function LandingHero() {
               </Button>
             </motion.div>
           </Col>
-          <Col lg={6} className="order-lg-2 order-1 mb-5 mb-lg-0">
+          <Col lg={6} className="order-lg-2 order-2 mb-5 mb-lg-0">
             <motion.div
               className="landing-hero-mockup"
               initial={{ opacity: 0, y: 40, scale: 0.98 }}

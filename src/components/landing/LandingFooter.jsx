@@ -31,7 +31,7 @@ export default function LandingFooter() {
         <Row className="landing-footer-row">
           <Col md={4} className="mb-4 mb-md-0">
             <Link to="/" className="landing-footer-brand">
-              FitCoach Pro
+              Athlento
             </Link>
             <p className="landing-footer-tagline">
               Sistema de gestión de entrenamientos para coaches profesionales.
@@ -71,7 +71,7 @@ export default function LandingFooter() {
           </Col>
         </Row>
         <div className="landing-footer-bottom">
-          <span>© {new Date().getFullYear()} FitCoach Pro. Entrenamientos personalizados.</span>
+          <span>© {new Date().getFullYear()} Athlento. Entrenamientos personalizados.</span>
         </div>
       </Container>
     </footer>

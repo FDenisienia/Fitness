@@ -1,6 +1,6 @@
 # Railway – Guía paso a paso exacta
 
-Conecta el backend de FitCoach Pro a Railway con MySQL.
+Conecta el backend de Athlento a Railway con MySQL.
 
 ---
 
@@ -144,7 +144,7 @@ Tienes dos opciones:
    ```
    https://TU-DOMINIO.up.railway.app/api/health
    ```
-   Deberías ver algo como: `{"success":true,"message":"FitCoach API OK"}`
+   Deberías ver algo como: `{"success":true,"message":"Athlento API OK"}`
 
 2. Prueba el login:
    ```

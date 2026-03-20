@@ -37,5 +37,5 @@ app.use('/api', routes);
 app.use(errorHandler);
 
 app.listen(config.port, () => {
-  console.log(`FitCoach API running on port ${config.port}`);
+  console.log(`Athlento API running on port ${config.port}`);
 });

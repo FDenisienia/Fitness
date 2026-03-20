@@ -1,4 +1,4 @@
-// FitCoach Pro - Schema MySQL
+// Athlento - Schema MySQL
 generator client {
   provider = "prisma-client-js"
 }

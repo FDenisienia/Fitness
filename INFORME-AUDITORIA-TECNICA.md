@@ -1,4 +1,4 @@
-# Informe de Auditoría Técnica — App-Nico (FitCoach Pro)
+# Informe de Auditoría Técnica — App-Nico (Athlento)
 
 **Fecha:** 19 de marzo de 2025  
 **Alcance:** Código completo, frontend y backend  

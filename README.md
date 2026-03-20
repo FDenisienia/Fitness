@@ -1,4 +1,4 @@
-# FitCoach Pro
+# Athlento
 
 Aplicación full-stack para gestión de entrenamientos, coaches, clientes y rutinas.
 

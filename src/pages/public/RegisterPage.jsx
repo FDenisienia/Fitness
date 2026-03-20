@@ -14,7 +14,7 @@ export default function RegisterPage() {
                 Las cuentas de alumno son creadas exclusivamente por tu coach. No existe registro público.
               </p>
               <p className="mb-0">
-                Si quieres entrenar con FitCoach Pro, contacta a tu coach para que te cree una cuenta y te proporcione tus credenciales de acceso.
+                Si quieres entrenar con Athlento, contacta a tu coach para que te cree una cuenta y te proporcione tus credenciales de acceso.
               </p>
             </div>
             <hr />
