@@ -13,17 +13,22 @@
   border-radius: var(--radius-md);
 }
 
-/* Logo compacto en header/navbar - no agranda el header */
+/* Logo en header: fondo transparente = mismo color que header, sin irregularidades */
 .navbar-brand .athlento-logo,
-.mobile-header .athlento-logo {
+.mobile-header .athlento-logo,
+.sidebar-brand .athlento-logo {
+  background: transparent !important;
   padding: 0.2rem 0.5rem;
   gap: 0.15rem;
   flex-shrink: 0;
 }
 
 .navbar-brand .athlento-logo--full,
-.mobile-header .athlento-logo--full {
+.mobile-header .athlento-logo--full,
+.sidebar-brand .athlento-logo--full {
+  background: transparent !important;
   padding: 0.2rem 0.5rem;
+  border-radius: 0;
 }
 
 .navbar-brand .athlento-logo-text,
