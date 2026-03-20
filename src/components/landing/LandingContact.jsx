@@ -1,11 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
+import { PRICING_PLANS } from '../../data/landingData';
 
 export default function LandingContact() {
-  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const planParam = searchParams.get('plan');
+  const [form, setForm] = useState({ name: '', email: '', message: '', plan: '' });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (planParam) {
+      const plan = PRICING_PLANS.find((p) => p.id === planParam);
+      if (plan) {
+        setForm((prev) => ({ ...prev, plan: plan.name }));
+      }
+      const el = document.getElementById('contacto');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [planParam]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -16,10 +31,11 @@ export default function LandingContact() {
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
     setSending(true);
     try {
-      // TODO: conectar con API de contacto cuando exista
+      // TODO: conectar con API de contacto cuando exista (incluir form.plan)
       await new Promise((r) => setTimeout(r, 800));
       setSent(true);
-      setForm({ name: '', email: '', message: '' });
+      setForm({ name: '', email: '', message: '', plan: '' });
+      setSearchParams({});
     } catch (err) {
       console.error(err);
     } finally {
@@ -70,6 +86,22 @@ export default function LandingContact() {
                 </div>
               ) : (
                 <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Plan de interés</Form.Label>
+                    <Form.Select
+                      name="plan"
+                      value={form.plan}
+                      onChange={handleChange}
+                      className="landing-contact-input"
+                    >
+                      <option value="">Seleccionar plan</option>
+                      {PRICING_PLANS.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
                   <Form.Group className="mb-3">
                     <Form.Label>Nombre</Form.Label>
                     <Form.Control

@@ -66,7 +66,7 @@ export default function LandingPricing() {
                 )}
                 <Button
                   as={Link}
-                  to={plan.isCustom ? '/registro' : '/registro'}
+                  to={`/?plan=${plan.id}#contacto`}
                   variant={plan.popular ? 'primary' : 'secondary'}
                   className="w-100 mt-auto"
                 >

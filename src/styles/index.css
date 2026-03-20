@@ -67,9 +67,10 @@ a { transition: color 0.2s ease, opacity 0.2s ease !important; }
   --border-active:  #FF5C00;
   --border-subtle:  #1E1E1E;
 
-  /* — TIPOGRAFÍA — */
-  --font-display: 'Space Mono', monospace;
-  --font-body:    'Space Grotesk', sans-serif;
+  /* — TIPOGRAFÍA — Rajdhani + Outfit (alto rendimiento, técnico) */
+  --font-heading: 'Rajdhani', sans-serif;
+  --font-body:    'Outfit', sans-serif;
+  --font-display: var(--font-heading);  /* alias para headings y títulos */
 
   /* — RADIOS — */
   --radius-sm: 6px;
@@ -106,9 +107,9 @@ html {
 body {
   margin: 0;
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--white-muted);
   background-color: var(--bg-root);
   -webkit-font-smoothing: antialiased;
@@ -116,15 +117,16 @@ body {
   overflow-x: hidden;
 }
 
-/* Tipografía escalada - Mobile First */
+/* Tipografía escalada - Rajdhani para headings, jerarquía clara */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   color: var(--white-pure);
+  letter-spacing: -0.02em;
 }
 h1 { font-size: clamp(1.5rem, 5vw, 2.25rem); line-height: 1.2; }
 h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); line-height: 1.3; }
-h3 { font-size: 1.125rem; font-family: var(--font-body); font-weight: 600; }
+h3 { font-size: 1.125rem; font-weight: 600; }
 
 a {
   text-decoration: none;
@@ -260,9 +262,10 @@ a {
 }
 
 .form-label {
+  font-family: var(--font-heading);
   color: var(--white-dim);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.5px;
 }
@@ -283,7 +286,7 @@ a {
 }
 
 .sidebar-brand {
-  font-family: var(--font-display);
+  font-family: 'Space Mono', monospace;
   font-weight: 700;
   font-size: 1.35rem;
   color: var(--white-pure);
@@ -348,13 +351,14 @@ a {
   justify-content: center;
   align-items: center;
   min-width: 0;
+  transform: translateX(-0.75rem);
 }
 
 .mobile-header-brand {
   color: var(--white-pure);
   font-weight: 700;
   font-size: 1.1rem;
-  font-family: var(--font-display);
+  font-family: 'Space Mono', monospace;
 }
 
 .mobile-header-spacer {
@@ -428,8 +432,8 @@ a {
     left: 0;
     right: 0;
     width: 100%;
-    height: 3.5rem;
-    padding: 0 1rem;
+    min-height: 3rem;
+    padding: 0.25rem 1rem;
     z-index: 1002;
     box-sizing: border-box;
   }
@@ -535,6 +539,7 @@ a {
 }
 
 .table-modern th {
+  font-family: var(--font-heading);
   font-weight: 600;
   color: var(--white-dim) !important;
   font-size: 9px;
@@ -691,6 +696,10 @@ img {
   border: 1px solid var(--success-text);
   color: var(--success-text);
 }
+
+/* Utilidades tipográficas - Rajdhani + Outfit */
+.font-heading { font-family: var(--font-heading) !important; }
+.font-body { font-family: var(--font-body) !important; }
 
 /* Bootstrap utility overrides - Volt OS */
 .bg-white, .bg-light {

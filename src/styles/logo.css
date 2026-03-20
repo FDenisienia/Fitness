@@ -9,31 +9,61 @@
 
 .athlento-logo-img {
   display: block;
+  object-fit: contain;
+}
+
+/* Hace que el negro del PNG se funda con el fondo del header */
+.navbar-brand .athlento-logo-img,
+.navbar-landing-brand .athlento-logo-img,
+.navbar-landing-block--center .athlento-logo-img,
+.navbar-landing-brand-mobile .athlento-logo-img,
+.navbar-landing-brand .athlento-logo-img,
+.mobile-header .athlento-logo-img,
+.sidebar-brand .athlento-logo-img,
+.landing-footer-brand .athlento-logo-img {
+  mix-blend-mode: lighten;
 }
 
 .athlento-logo--full {
-  background: #000000;
+  background: var(--bg-root);
   padding: 1rem 1.5rem;
   border-radius: var(--radius-md);
 }
 
-/* Logo en header: fondo transparente = mismo color que header, sin irregularidades */
+/* Logo en header: mismo fondo que el header */
 .navbar-brand .athlento-logo,
 .mobile-header .athlento-logo,
 .sidebar-brand .athlento-logo {
-  background: transparent !important;
-  padding: 0.2rem 0.5rem;
-  gap: 0.15rem;
+  background: var(--bg-root) !important;
+  padding: 0.35rem 0.6rem;
+  gap: 0.25rem;
   flex-shrink: 0;
 }
 
 .navbar-brand .athlento-logo--full,
 .mobile-header .athlento-logo--full,
 .sidebar-brand .athlento-logo--full {
-  background: transparent !important;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0;
+  background: var(--bg-root) !important;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-md);
 }
+
+/* Logo horizontal (sidebar, footer, etc.) */
+.athlento-logo--horizontal,
+.navbar-brand .athlento-logo,
+.mobile-header .athlento-logo {
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Logo vertical: icono arriba, Athlento abajo (header landing) */
+.athlento-logo--vertical {
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
 
 .navbar-brand .athlento-logo-text,
 .mobile-header .athlento-logo-text {
@@ -42,7 +72,7 @@
 }
 
 .athlento-logo-text {
-  font-family: var(--font-body);
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
   font-size: 1.25rem;
   color: #FFFFFF;
@@ -59,13 +89,49 @@
 }
 
 .landing-footer-brand .athlento-logo--full {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--bg-root) !important;
+  padding: 0.3rem 0.5rem;
+  gap: 0.25rem;
+  transform: scale(0.75);
+  transform-origin: left center;
 }
 
 .landing-footer-brand:hover .athlento-logo--full {
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--bg-root) !important;
 }
 
 .landing-footer-brand .athlento-logo-text {
   color: #FFFFFF;
+  font-size: 1.15rem;
+}
+
+/* Header mobile: logo vertical (icono arriba, Athlento abajo), Athlento más a la izquierda */
+@media (max-width: 991px) {
+  .navbar-landing-brand-mobile .athlento-logo,
+  .navbar-landing-brand .athlento-logo {
+    flex-direction: column;
+    gap: 0.15rem;
+    align-items: center;
+    transform: scale(0.85);
+    transform-origin: center center;
+    padding: 0.2rem 0.4rem;
+  }
+  .navbar-landing-brand-mobile .athlento-logo-text,
+  .navbar-landing-brand .athlento-logo-text {
+    margin-left: -1.3rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .mobile-header .athlento-logo {
+    flex-direction: column;
+    gap: 0.15rem;
+    align-items: center;
+    transform: scale(0.85);
+    transform-origin: center center;
+    padding: 0.2rem 0.4rem;
+  }
+  .mobile-header .athlento-logo-text {
+    margin-left: -1.3rem;
+  }
 }

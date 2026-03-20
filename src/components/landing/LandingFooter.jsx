@@ -8,14 +8,6 @@ const FOOTER_LINKS = [
   { to: '#como-empezar', label: 'Cómo empezar' },
   { to: '#planes', label: 'Planes' },
   { to: '#contacto', label: 'Contacto' },
-  { to: '/login', label: 'Iniciar sesión' },
-  { to: '/registro', label: 'Registrarse' },
-];
-
-const SOCIAL_LINKS = [
-  { label: 'Instagram', href: '#', icon: 'ig' },
-  { label: 'LinkedIn', href: '#', icon: 'li' },
-  { label: 'Twitter', href: '#', icon: 'tw' },
 ];
 
 export default function LandingFooter() {
@@ -33,25 +25,11 @@ export default function LandingFooter() {
         <Row className="landing-footer-row">
           <Col md={4} className="mb-4 mb-md-0">
             <Link to="/" className="landing-footer-brand d-inline-flex">
-              <AthlentoLogo variant="full" size="sm" />
+              <AthlentoLogo size="xs" layout="horizontal" />
             </Link>
             <p className="landing-footer-tagline">
               Sistema de gestión de entrenamientos para coaches profesionales.
             </p>
-            <div className="landing-footer-social">
-              {SOCIAL_LINKS.map((s, i) => (
-                <a
-                  key={i}
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="landing-footer-social-link"
-                  aria-label={s.label}
-                >
-                  {s.label}
-                </a>
-              ))}
-            </div>
           </Col>
           <Col md={4} className="mb-4 mb-md-0">
             <h5 className="landing-footer-heading">Enlaces</h5>
@@ -68,7 +46,7 @@ export default function LandingFooter() {
           <Col md={4}>
             <h5 className="landing-footer-heading">Contacto</h5>
             <p className="landing-footer-contact mb-0">
-              <a href="mailto:hola@athlento.com">hola@athlento.com</a>
+              <a href="mailto:athlento.app@gmail.com">athlento.app@gmail.com</a>
             </p>
           </Col>
         </Row>

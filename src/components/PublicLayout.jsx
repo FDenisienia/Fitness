@@ -40,25 +40,61 @@ export default function PublicLayout() {
     setMenuOpen(false);
   };
 
-  const navLinks = isLanding ? [
+  const navLinksLeft = isLanding ? [
     { href: '#funcionalidades', label: 'Funcionalidades', onClick: (e) => scrollTo(e, '#funcionalidades') },
     { href: '#como-empezar', label: 'Cómo empezar', onClick: (e) => scrollTo(e, '#como-empezar') },
     { href: '#planes', label: 'Planes', onClick: (e) => scrollTo(e, '#planes') },
     { href: '#contacto', label: 'Contacto', onClick: (e) => scrollTo(e, '#contacto') },
+  ] : [];
+  const navLinksRight = isLanding ? [
     { to: '/login', label: 'Iniciar sesión', isLink: true },
-  ] : [
+  ] : [];
+  const navLinks = !isLanding ? [
     { to: '/', label: 'Inicio', isLink: true },
     ...(location.pathname !== '/login' ? [
-      { to: '/login', label: 'Iniciar sesión', isLink: true },
+      { to: '/login', label: 'Iniciar sesión', isLink: true, alignRight: true },
       { to: '/registro', label: 'Registrarse', isLink: true, primary: true },
     ] : []),
-  ];
+  ] : [];
 
   if (isLanding) {
     return (
       <>
-        <header className={`navbar-landing navbar-landing--collapsible ${scrolled ? 'scrolled' : ''}`}>
-          <div className="navbar-landing-top">
+        <header className={`navbar-landing ${scrolled ? 'scrolled' : ''}`}>
+          {/* Desktop: 3 bloques (left | center | right) */}
+          <div className="navbar-landing-inner">
+            {/* Bloque izquierdo: links de navegación */}
+            <nav className="navbar-landing-block navbar-landing-block--left">
+              {navLinksLeft.map((item, i) => (
+                item.isLink ? (
+                  <Link key={i} to={item.to} className="navbar-landing-link" onClick={() => setMenuOpen(false)}>
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a key={i} href={item.href} className="navbar-landing-link" onClick={item.onClick}>
+                    {item.label}
+                  </a>
+                )
+              ))}
+            </nav>
+
+            {/* Bloque centro: logo + marca (vertical) */}
+            <Link to="/" className="navbar-landing-block navbar-landing-block--center">
+              <AthlentoLogo size="xs" layout="horizontal" />
+            </Link>
+
+            {/* Bloque derecho: Iniciar sesión */}
+            <div className="navbar-landing-block navbar-landing-block--right">
+              {navLinksRight.map((item, i) => (
+                <Link key={i} to={item.to} className="navbar-landing-cta" onClick={() => setMenuOpen(false)}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile: hamburguesa + logo centrado */}
+          <div className="navbar-landing-mobile">
             <button
               type="button"
               className={`navbar-landing-toggle ${menuOpen ? 'navbar-landing-toggle--open' : ''}`}
@@ -70,24 +106,28 @@ export default function PublicLayout() {
               <span className="navbar-landing-toggle-bar" />
               <span className="navbar-landing-toggle-bar" />
             </button>
-            <Link to="/" className="navbar-landing-brand">
-              <AthlentoLogo size="xs" />
+            <Link to="/" className="navbar-landing-brand-mobile">
+              <AthlentoLogo size="xs" layout="horizontal" />
             </Link>
-            <div className="navbar-landing-spacer" aria-hidden="true" />
           </div>
+
+          {/* Dropdown móvil */}
           <div className={`navbar-landing-dropdown ${menuOpen ? 'navbar-landing-dropdown--open' : ''}`}>
-            <nav className="navbar-landing-nav">
-              {navLinks.map((item, i) => (
+            <nav className="navbar-landing-dropdown-nav">
+              {navLinksLeft.map((item, i) => (
                 item.isLink ? (
-                  <Link key={i} to={item.to} className={`navbar-landing-link ${item.primary ? 'navbar-landing-link--primary' : ''}`} onClick={() => setMenuOpen(false)}>
+                  <Link key={i} to={item.to} className="navbar-landing-dropdown-link" onClick={() => setMenuOpen(false)}>
                     {item.label}
                   </Link>
                 ) : (
-                  <a key={i} href={item.href} className="navbar-landing-link" onClick={item.onClick}>
+                  <a key={i} href={item.href} className="navbar-landing-dropdown-link" onClick={item.onClick}>
                     {item.label}
                   </a>
                 )
               ))}
+              <Link to="/login" className="navbar-landing-dropdown-cta" onClick={() => setMenuOpen(false)}>
+                Iniciar sesión
+              </Link>
             </nav>
           </div>
         </header>
@@ -98,7 +138,7 @@ export default function PublicLayout() {
 
   return (
     <>
-      <header className="navbar-landing navbar-landing--collapsible">
+      <header className="navbar-landing navbar-landing--legacy">
         <div className="navbar-landing-top">
           <button
             type="button"
@@ -117,9 +157,9 @@ export default function PublicLayout() {
           <div className="navbar-landing-spacer" aria-hidden="true" />
         </div>
         <div className={`navbar-landing-dropdown ${menuOpen ? 'navbar-landing-dropdown--open' : ''}`}>
-          <nav className="navbar-landing-nav">
+            <nav className="navbar-landing-nav">
             {navLinks.map((item, i) => (
-              <Link key={i} to={item.to} className={`navbar-landing-link ${item.primary ? 'navbar-landing-link--primary' : ''}`} onClick={() => setMenuOpen(false)}>
+              <Link key={i} to={item.to} className={`navbar-landing-link ${item.primary ? 'navbar-landing-link--primary' : ''} ${item.alignRight ? 'navbar-landing-link--right' : ''}`} onClick={() => setMenuOpen(false)}>
                 {item.label}
               </Link>
             ))}
