@@ -7,7 +7,7 @@ import { HOW_IT_WORKS_STEPS } from '../../data/landingData';
 
 export default function LandingHowItWorks() {
   return (
-    <section id="como-funciona" className="landing-how-it-works">
+    <section id="como-empezar" className="landing-how-it-works">
       <Container>
         <motion.div
           className="section-header text-center mb-5"

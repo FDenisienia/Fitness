@@ -7,6 +7,10 @@
   gap: 0.5rem;
 }
 
+.athlento-logo-img {
+  display: block;
+}
+
 .athlento-logo--full {
   background: #000000;
   padding: 1rem 1.5rem;

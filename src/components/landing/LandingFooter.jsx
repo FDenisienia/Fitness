@@ -5,8 +5,9 @@ import AthlentoLogo from '../AthlentoLogo';
 
 const FOOTER_LINKS = [
   { to: '#funcionalidades', label: 'Funcionalidades' },
-  { to: '#como-funciona', label: 'Cómo funciona' },
+  { to: '#como-empezar', label: 'Cómo empezar' },
   { to: '#planes', label: 'Planes' },
+  { to: '#contacto', label: 'Contacto' },
   { to: '/login', label: 'Iniciar sesión' },
   { to: '/registro', label: 'Registrarse' },
 ];
