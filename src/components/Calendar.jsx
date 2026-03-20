@@ -267,8 +267,11 @@ export default function Calendar({ plannedWorkouts = [], routines = [], onSelect
         }
         @media (max-width: 639px) {
           .calendar-cell {
-            min-height: 0; aspect-ratio: 1; padding: 6px 4px;
+            min-height: 0; aspect-ratio: 1; padding: 4px 2px;
+            justify-content: center; gap: 0;
           }
+          .calendar-cell .day-num { font-size: 0.7rem; }
+          .calendar-cell .day-abbrev { font-size: 0.55rem; font-weight: 600; line-height: 1; margin-top: 1px; }
         }
         .calendar-cell:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .calendar-cell.other-month { opacity: 0.45; }
