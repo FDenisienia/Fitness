@@ -102,17 +102,6 @@ export default function SidebarLayout({ basePath, role }) {
           <div className="sidebar-brand">
             <AthlentoLogo size="sm" />
           </div>
-          <div className="sidebar-mobile-top">
-            <AthlentoLogo size="xs" className="sidebar-mobile-top-logo" />
-            <button
-              type="button"
-              className="sidebar-drawer-close"
-              onClick={closeSidebar}
-              aria-label="Cerrar menú"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </div>
           <div className="sidebar-middle">
             <div className="sidebar-user-top">
               <span className="sidebar-user-top-text">
