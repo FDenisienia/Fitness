@@ -452,7 +452,7 @@ a {
     box-sizing: border-box;
     padding-left: max(16px, 1rem);
     padding-right: max(16px, 1rem);
-    padding-top: 0.75rem;
+    padding-top: 1.125rem;
   }
 
   .sidebar-user-identity {
@@ -749,9 +749,9 @@ a {
     display: none;
   }
 
-  /* Drawer: aire bajo el header fijo; el inset ya lo da .sidebar-middle (≤768px) */
+  /* Drawer: más aire bajo el header fijo para que el bloque nombre se vea prolijo */
   .sidebar-middle {
-    padding-top: 0.85rem;
+    padding-top: 1.5rem;
   }
 
   .sidebar-user-identity {
