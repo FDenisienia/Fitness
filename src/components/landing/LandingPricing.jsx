@@ -38,7 +38,7 @@ export default function LandingPricing() {
                   {plan.price !== null ? (
                     <>
                       <span className="pricing-currency">USD</span>
-                      <span className="pricing-amount">{plan.price}</span>
+                      <span className="pricing-amount">{Number(plan.price).toFixed(2)}</span>
                       <span className="pricing-period">/mes</span>
                     </>
                   ) : (

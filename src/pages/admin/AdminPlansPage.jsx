@@ -38,7 +38,7 @@ export default function AdminPlansPage() {
       <Card className="mb-4 border-primary">
         <Card.Body>
           <h5>Ingresos mensuales estimados</h5>
-          <h2 className="text-primary mb-0">{totalRevenue} €/mes</h2>
+          <h2 className="text-primary mb-0">USD {totalRevenue.toFixed(2)}/mes</h2>
           <small className="text-muted">Basado en coaches con suscripción activa</small>
         </Card.Body>
       </Card>
@@ -53,7 +53,7 @@ export default function AdminPlansPage() {
               </Card.Header>
               <Card.Body className="d-flex flex-column flex-grow-1">
                 <div className="mb-2" style={{ minHeight: 52 }}>
-                  <h3 className="mb-1">{p.id === 'personalizado' ? 'Personalizado' : `${p.price} €/mes`}</h3>
+                  <h3 className="mb-1">{p.id === 'personalizado' ? 'Personalizado' : `USD ${Number(p.price).toFixed(2)}/mes`}</h3>
                   <p className="text-muted small mb-0">
                     {p.maxAlumnos === 999 ? 'Alumnos ilimitados' : `Hasta ${p.maxAlumnos} alumnos`}
                   </p>
@@ -70,7 +70,7 @@ export default function AdminPlansPage() {
                 </ul>
                 <div className="mt-auto pt-3">
                   <hr className="my-2" />
-                  <p className="mb-0">{p.id === 'personalizado' ? <strong>Consultar</strong> : <><strong>{p.id === 'premium' ? (p.revenue || p.price) : p.revenue} €</strong> / mes</>}</p>
+                  <p className="mb-0">{p.id === 'personalizado' ? <strong>Consultar</strong> : <><strong>USD {(p.id === 'premium' ? (p.revenue || p.price) : p.revenue).toFixed(2)}</strong> / mes</>}</p>
                 </div>
               </Card.Body>
             </Card>
@@ -89,7 +89,7 @@ export default function AdminPlansPage() {
                 <tr key={c.id}>
                   <td>{c.name} {c.lastName}</td>
                   <td><Badge bg="primary">{plan.name}</Badge></td>
-                  <td>{plan.id === 'personalizado' ? 'Personalizado' : `${plan.price} €/mes`}</td>
+                  <td>{plan.id === 'personalizado' ? 'Personalizado' : `USD ${Number(plan.price).toFixed(2)}/mes`}</td>
                   <td><Badge bg={c.subscriptionStatus === 'activa' ? 'success' : 'secondary'}>{c.subscriptionStatus || 'activa'}</Badge></td>
                 </tr>
               );

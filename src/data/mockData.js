@@ -24,7 +24,7 @@ export const EQUIPMENT = ['Barra', 'Mancuernas', 'Kettlebell', 'Máquina', 'Peso
 
 export const SUBSCRIPTION_PLANS = {
   basico: {
-    id: 'basico', name: 'Básico', price: 7.99, maxAlumnos: 10,
+    id: 'basico', name: 'Básico', price: 4.99, maxAlumnos: 10,
     hasWeightTracking: false, hasLibrary: false, hasAdvancedWeight: false,
     tagline: 'Lo esencial: alumnos, rutinas y calendario',
     features: [
@@ -39,7 +39,7 @@ export const SUBSCRIPTION_PLANS = {
     noIncludes: ['Seguimiento de peso', 'Biblioteca personal', 'Filtros avanzados en gráficos']
   },
   pro: {
-    id: 'pro', name: 'Pro', price: 30, maxAlumnos: 30,
+    id: 'pro', name: 'Pro', price: 19.99, maxAlumnos: 30,
     hasWeightTracking: true, hasLibrary: true, hasAdvancedWeight: false,
     tagline: 'Seguimiento de peso y biblioteca personal',
     features: [
@@ -54,7 +54,7 @@ export const SUBSCRIPTION_PLANS = {
     noIncludes: ['Filtros 6m, 12m, todo', 'Análisis de peso por períodos amplios']
   },
   premium: {
-    id: 'premium', name: 'Premium', price: 50, maxAlumnos: 100,
+    id: 'premium', name: 'Premium', price: 39.99, maxAlumnos: 100,
     hasWeightTracking: true, hasLibrary: true, hasAdvancedWeight: true,
     tagline: 'Análisis avanzado y más capacidad',
     features: [

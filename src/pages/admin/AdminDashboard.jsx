@@ -35,7 +35,7 @@ export default function AdminDashboard() {
   const statsData = stats || {};
   const statItems = [
     { label: 'Coaches activos (tus clientes)', value: activeCoaches.length, link: '/admin/coaches', color: 'success' },
-    { label: 'Ingresos mensuales (€)', value: revenueByPlan, link: '/admin/coaches', color: 'primary' },
+    { label: 'Ingresos mensuales (USD)', value: revenueByPlan.toFixed(2), link: '/admin/coaches', color: 'primary' },
     { label: 'Alumnos totales', value: statsData.clientsCount ?? 0, link: null, color: 'info' },
     { label: 'Entrenamientos registrados', value: statsData.completedWorkouts ?? 0, link: null, color: 'warning' },
     { label: 'Mensajes sin leer', value: statsData.pendingMessages ?? 0, link: '/admin/consultas', color: 'danger' },

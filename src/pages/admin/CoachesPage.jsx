@@ -118,7 +118,7 @@ export default function CoachesPage() {
                 <tr key={c.id}>
                   <td>{c.name} {c.lastName}</td>
                   <td>{c.email}</td>
-                  <td><Badge bg="primary">{plan.name}</Badge> {plan.id === 'personalizado' ? 'Personalizado' : `${plan.price}€/mes`}</td>
+                  <td><Badge bg="primary">{plan.name}</Badge> {plan.id === 'personalizado' ? 'Personalizado' : `USD ${Number(plan.price).toFixed(2)}/mes`}</td>
                   <td><strong>{count}</strong>/{plan.maxAlumnos === 999 ? '∞' : plan.maxAlumnos}</td>
                   <td>{c.specialty || '-'}</td>
                   <td><Badge bg={c.active !== false ? 'success' : 'secondary'}>{c.active !== false ? 'Activo' : 'Inactivo'}</Badge></td>
@@ -156,7 +156,7 @@ export default function CoachesPage() {
           <Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={newCoach.email} onChange={e => setNewCoach(n => ({ ...n, email: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Contraseña</Form.Label><Form.Control type="password" value={newCoach.password} onChange={e => setNewCoach(n => ({ ...n, password: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Especialidad</Form.Label><Form.Control value={newCoach.specialty} onChange={e => setNewCoach(n => ({ ...n, specialty: e.target.value }))} placeholder="Ej: Fuerza" /></Form.Group>
-          <Form.Group><Form.Label>Plan de suscripción</Form.Label><Form.Select value={newCoach.subscriptionPlan} onChange={e => setNewCoach(n => ({ ...n, subscriptionPlan: e.target.value }))}>{Object.entries(SUBSCRIPTION_PLANS).map(([k, p]) => <option key={k} value={k}>{p.name} - {p.id === 'personalizado' ? 'Personalizado' : `${p.price}€/mes`} (máx {p.maxAlumnos === 999 ? '∞' : p.maxAlumnos} alumnos)</option>)}</Form.Select></Form.Group>
+          <Form.Group><Form.Label>Plan de suscripción</Form.Label><Form.Select value={newCoach.subscriptionPlan} onChange={e => setNewCoach(n => ({ ...n, subscriptionPlan: e.target.value }))}>{Object.entries(SUBSCRIPTION_PLANS).map(([k, p]) => <option key={k} value={k}>{p.name} - {p.id === 'personalizado' ? 'Personalizado' : `USD ${Number(p.price).toFixed(2)}/mes`} (máx {p.maxAlumnos === 999 ? '∞' : p.maxAlumnos} alumnos)</option>)}</Form.Select></Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowCreate(false)}>Cancelar</Button>

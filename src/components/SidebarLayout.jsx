@@ -4,6 +4,13 @@ import { Nav } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
 import AthlentoLogo from './AthlentoLogo';
+import { getInitials } from '../utils/clientDisplay';
+
+const ROLE_LABELS = {
+  admin: 'Administrador',
+  coach: 'Coach',
+  cliente: 'Cliente',
+};
 
 const navItems = {
   admin: [
@@ -103,10 +110,20 @@ export default function SidebarLayout({ basePath, role }) {
             <AthlentoLogo size="sm" />
           </div>
           <div className="sidebar-middle">
-            <div className="sidebar-user-top">
-              <span className="sidebar-user-top-text">
-                {user?.name} {user?.lastName}
-              </span>
+            <div className="sidebar-user-identity" aria-label="Tu cuenta">
+              <div className="sidebar-user-identity-inner">
+                <div className="sidebar-user-avatar" aria-hidden="true">
+                  {getInitials(user?.name, user?.lastName)}
+                </div>
+                <div className="sidebar-user-meta">
+                  <span className="sidebar-user-name">
+                    {user?.name} {user?.lastName}
+                  </span>
+                  {role && ROLE_LABELS[role] && (
+                    <span className="sidebar-user-role">{ROLE_LABELS[role]}</span>
+                  )}
+                </div>
+              </div>
             </div>
             <nav className="sidebar-nav flex-column" aria-label="Navegación principal">
               {items.map(({ to, label, exact }) => (
@@ -123,7 +140,6 @@ export default function SidebarLayout({ basePath, role }) {
             </nav>
           </div>
           <div className="sidebar-footer">
-            <div className="sidebar-footer-user">{user?.name} {user?.lastName}</div>
             <div className="sidebar-footer-logout">
               <button type="button" className="btn btn-outline-light btn-sm w-100" onClick={handleLogout}>
                 Cerrar sesión
