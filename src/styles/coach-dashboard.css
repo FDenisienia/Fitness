@@ -7,6 +7,23 @@
   --state-completed: var(--orange);
   --state-pending: var(--warning-text);
   --state-inactive: var(--danger-text);
+  /* CTAs rápidos — naranja legible, sin mezclar con orange-dim en iconos */
+  --coach-qa-text: var(--orange);
+  --coach-qa-text-hover: var(--orange-light);
+  --coach-qa-border: rgba(255, 122, 40, 0.55);
+  --coach-qa-border-hover: rgba(255, 148, 72, 0.85);
+  --coach-qa-bg: linear-gradient(
+    165deg,
+    rgba(255, 92, 0, 0.13) 0%,
+    rgba(26, 26, 26, 0.98) 45%,
+    rgba(18, 18, 18, 0.95) 100%
+  );
+  --coach-qa-bg-hover: linear-gradient(
+    165deg,
+    rgba(255, 92, 0, 0.22) 0%,
+    rgba(34, 34, 34, 0.98) 50%,
+    rgba(22, 22, 22, 0.98) 100%
+  );
 }
 
 .dashboard-header {
@@ -157,7 +174,7 @@
 
 .kpi-micro.negative { color: var(--danger-text); }
 
-/* Quick Actions */
+/* Quick Actions — CTA premium: alto contraste, iconos alineados al texto (no orange-dim) */
 .dashboard-quick-actions {
   display: flex;
   flex-wrap: wrap;
@@ -165,34 +182,95 @@
   margin-bottom: var(--space-8);
 }
 
-.quick-action-btn {
+.coach-dashboard .quick-action-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.25rem;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.35rem;
+  min-height: 2.875rem;
   border-radius: var(--radius-md);
-  border: 1px solid var(--orange-light);
-  background: transparent;
-  color: var(--orange);
-  font-size: 0.9rem;
-  font-weight: 500;
+  border: 1px solid var(--coach-qa-border);
+  background: var(--coach-qa-bg);
+  background-color: var(--bg-card);
+  color: var(--coach-qa-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
   text-decoration: none;
-  transition: all var(--transition);
+  opacity: 1;
+  -webkit-tap-highlight-color: rgba(255, 92, 0, 0.22);
+  box-shadow:
+    0 1px 0 rgba(255, 122, 40, 0.14) inset,
+    0 2px 8px rgba(0, 0, 0, 0.38);
+  transition:
+    color var(--transition),
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
 }
 
-.quick-action-btn:hover {
-  background: var(--orange-ghost);
-  color: var(--orange);
-  border-color: var(--orange-dim);
+.coach-dashboard .quick-action-btn:hover {
+  color: var(--coach-qa-text-hover);
+  border-color: var(--coach-qa-border-hover);
+  background: var(--coach-qa-bg-hover);
+  background-color: var(--bg-card-hover);
+  box-shadow:
+    0 1px 0 rgba(255, 148, 72, 0.22) inset,
+    0 4px 16px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 92, 0, 0.12);
+  transform: translateY(-1px);
 }
 
-.quick-action-btn svg {
+.coach-dashboard .quick-action-btn:active {
+  color: var(--orange-light);
+  transform: translateY(0) scale(0.99);
+  border-color: rgba(255, 122, 40, 0.65);
+  background: rgba(255, 92, 0, 0.14);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.45) inset,
+    0 1px 0 rgba(255, 122, 40, 0.1) inset;
+}
+
+.coach-dashboard .quick-action-btn:focus {
+  outline: none;
+}
+
+.coach-dashboard .quick-action-btn:focus-visible {
+  outline: 2px solid var(--orange-light);
+  outline-offset: 3px;
+  border-color: rgba(255, 148, 72, 0.95);
+}
+
+.coach-dashboard .quick-action-btn[aria-disabled="true"],
+.coach-dashboard .quick-action-btn.disabled {
+  opacity: 0.42;
+  pointer-events: none;
+  cursor: not-allowed;
+  color: var(--white-dim);
+  border-color: rgba(255, 122, 40, 0.18);
+  background: rgba(26, 26, 26, 0.6);
+  box-shadow: none;
+  transform: none;
+}
+
+.coach-dashboard .quick-action-btn svg {
   flex-shrink: 0;
-  color: var(--orange-dim);
+  color: currentColor;
+  opacity: 1;
 }
 
-.quick-action-btn:hover svg {
-  color: var(--orange);
+@media (hover: none) {
+  .coach-dashboard .quick-action-btn:hover {
+    transform: none;
+  }
+
+  .coach-dashboard .quick-action-btn:active {
+    transform: scale(0.98);
+  }
 }
 
 /* Panel principal - Mobile First: 1 col → 2 cols en desktop */
@@ -536,14 +614,19 @@
   }
 
   .dashboard-quick-actions {
-    gap: var(--space-2);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
     margin-bottom: var(--space-6);
   }
 
-  .quick-action-btn {
-    padding: var(--space-3) var(--space-4);
-    font-size: 0.875rem;
-    min-height: var(--touch-min);
+  .coach-dashboard .quick-action-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.875rem 1.25rem;
+    min-height: 3rem;
+    font-size: 0.9375rem;
+    border-radius: var(--radius-lg);
   }
 
   .alumno-card {
