@@ -308,12 +308,19 @@ a {
 .sidebar-user-identity {
   flex-shrink: 0;
   margin: 0 1rem 0.75rem 1rem;
+  min-width: 0;
+  align-self: stretch;
+  box-sizing: border-box;
 }
 
 .sidebar-user-identity-inner {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 0.8rem 0.9rem;
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.12) 100%);
   background-color: var(--bg-surface);
@@ -433,8 +440,25 @@ a {
     overflow: hidden;
   }
 
+  /* Inset horizontal vía padding del middle: evita recorte a la izquierda y unifica con el menú */
+  .sidebar-middle {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding-left: max(16px, 1rem);
+    padding-right: max(16px, 1rem);
+    padding-top: 0.75rem;
+  }
+
   .sidebar-user-identity {
-    margin: 0 max(var(--space-4), 16px) 0.65rem max(var(--space-4), 16px);
+    margin: 0 0 0.65rem 0;
+    width: 100%;
+    max-width: 100%;
   }
 
   .sidebar-user-identity-inner {
@@ -458,16 +482,6 @@ a {
     letter-spacing: 0.08em;
   }
 
-  .sidebar-middle {
-    flex: 1 1 0;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    display: flex;
-    flex-direction: column;
-  }
-
   .sidebar-nav {
     flex: 0 0 auto !important;
     overflow: visible !important;
@@ -488,11 +502,11 @@ a {
   }
 }
 
-/* Tablet estrecha: mismo inset horizontal que .sidebar-nav .nav-link (1.5rem) */
+/* Tablet estrecha: un poco más de aire lateral */
 @media (max-width: 768px) and (min-width: 640px) {
-  .sidebar-user-identity {
-    margin-left: 1.5rem;
-    margin-right: 1.5rem;
+  .sidebar-middle {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 
   .sidebar-footer {
@@ -505,6 +519,8 @@ a {
 @media (min-width: 769px) {
   .sidebar-middle {
     padding-top: 0.35rem;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .sidebar-user-identity {
@@ -733,21 +749,23 @@ a {
     display: none;
   }
 
-  /* Alinear bloque identidad con el menú (mismo inset que .nav-link) */
+  /* Drawer: aire bajo el header fijo; el inset ya lo da .sidebar-middle (≤768px) */
+  .sidebar-middle {
+    padding-top: 0.85rem;
+  }
+
   .sidebar-user-identity {
-    margin-left: calc(0.75rem + 0.25rem);
-    margin-right: calc(0.75rem + 0.25rem);
     margin-bottom: 0.5rem;
   }
 
-  /* El scroll es de .sidebar-middle (≤768px); aquí solo estilo de lista */
+  /* El scroll es de .sidebar-middle (≤768px); sin padding horizontal extra (evita doble margen) */
   .sidebar-nav {
     flex: 0 0 auto !important;
     min-height: 0;
     overflow: visible !important;
     display: flex;
     flex-direction: column;
-    padding: 1rem 0.75rem 0.5rem;
+    padding: 0.5rem 0 0.5rem 0;
     gap: 0.25rem;
   }
   .sidebar-nav .nav-link {
