@@ -102,6 +102,11 @@ export default function SidebarLayout({ basePath, role }) {
           <div className="sidebar-brand">
             <AthlentoLogo size="sm" />
           </div>
+          <div className="sidebar-user-top">
+            <span className="sidebar-user-top-text">
+              {user?.name} {user?.lastName}
+            </span>
+          </div>
           <nav className="sidebar-nav flex-column" aria-label="Navegación principal">
             {items.map(({ to, label, exact }) => (
               <Nav.Link
@@ -116,10 +121,12 @@ export default function SidebarLayout({ basePath, role }) {
             ))}
           </nav>
           <div className="sidebar-footer">
-            <div className="text-white-50 small mb-2">{user?.name} {user?.lastName}</div>
-            <button type="button" className="btn btn-outline-light btn-sm w-100" onClick={handleLogout}>
-              Cerrar sesión
-            </button>
+            <div className="sidebar-footer-user">{user?.name} {user?.lastName}</div>
+            <div className="sidebar-footer-logout">
+              <button type="button" className="btn btn-outline-light btn-sm w-100" onClick={handleLogout}>
+                Cerrar sesión
+              </button>
+            </div>
           </div>
         </div>
       </aside>

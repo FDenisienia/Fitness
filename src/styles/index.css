@@ -340,6 +340,64 @@ a {
   color: var(--white-dim) !important;
 }
 
+/* Nombre arriba: oculto en desktop (se usa .sidebar-footer-user) */
+.sidebar-user-top {
+  display: none;
+}
+
+.sidebar-footer-user {
+  color: var(--white-dim);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Sidebar ≤768px: nombre arriba (antes de Inicio), logout separado del bloque de enlaces */
+@media (max-width: 768px) {
+  .sidebar-user-top {
+    display: block;
+    flex-shrink: 0;
+    padding: 0.75rem max(var(--space-4), 16px) 1rem;
+  }
+
+  .sidebar-user-top-text {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--white-muted);
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+
+  .sidebar-footer-user {
+    display: none !important;
+  }
+
+  /* Espacio 30–40px entre el bloque de enlaces (Perfil) y la acción de cerrar sesión */
+  .sidebar-footer {
+    padding-top: 2.25rem;
+    padding-left: max(var(--space-4), 16px);
+    padding-right: max(var(--space-4), 16px);
+    padding-bottom: 1rem;
+  }
+
+  .sidebar-footer-logout .btn {
+    min-height: var(--touch-min);
+  }
+}
+
+/* Tablet estrecha: mismo inset horizontal que .sidebar-nav .nav-link (1.5rem) */
+@media (max-width: 768px) and (min-width: 640px) {
+  .sidebar-user-top {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .sidebar-footer {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 .main-content {
   margin-left: 260px;
   min-height: 100vh;
@@ -540,6 +598,14 @@ a {
     display: none;
   }
 
+  /* Alinear nombre con el texto de los .nav-link (padding del nav + del link) */
+  .sidebar-user-top {
+    padding-left: calc(0.75rem + 1.25rem);
+    padding-right: calc(0.75rem + 1.25rem);
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
   /* Navegación: scroll interno, footer siempre visible */
   .sidebar-nav {
     flex: 1 1 0;
@@ -565,7 +631,7 @@ a {
   /* Footer fijo: Cerrar sesión siempre visible, safe-area para iPhone */
   .sidebar-footer {
     flex-shrink: 0;
-    padding: 1rem 1.25rem;
+    padding: 2.25rem 1.25rem 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     border-top: 0.5px solid var(--border-subtle);
     background: var(--bg-card);
