@@ -294,6 +294,58 @@ a {
   overflow: hidden;
 }
 
+/* Fila logo + cerrar: solo drawer móvil (≤639px); desktop oculta */
+.sidebar-mobile-top {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding: var(--space-4) max(var(--space-4), 16px);
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.sidebar-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--white-dim);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition), background var(--transition);
+}
+
+.sidebar-drawer-close:hover,
+.sidebar-drawer-close:focus-visible {
+  color: var(--orange);
+  background: var(--white-ghost);
+  outline: none;
+}
+
+.sidebar-drawer-close:focus-visible {
+  box-shadow: 0 0 0 2px var(--orange);
+}
+
+/* Contenedor central: desktop el scroll vive en .sidebar-nav; ≤768px scrollea el bloque completo */
+.sidebar-middle {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .sidebar-brand {
   font-family: 'Space Mono', monospace;
   font-weight: 700;
@@ -351,8 +403,25 @@ a {
   margin-bottom: 0.5rem;
 }
 
-/* Sidebar ≤768px: nombre arriba (antes de Inicio), logout separado del bloque de enlaces */
+/* Sidebar ≤768px: layout vertical; scroll en nombre + menú; logout fijo abajo con margin-top: auto */
 @media (max-width: 768px) {
+  /* Cadena de altura para % y flex; el drawer ≤639px redefine height bajo el header */
+  .sidebar {
+    min-height: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .sidebar-drawer {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .sidebar-user-top {
     display: block;
     flex-shrink: 0;
@@ -372,12 +441,29 @@ a {
     display: none !important;
   }
 
-  /* Espacio 30–40px entre el bloque de enlaces (Perfil) y la acción de cerrar sesión */
+  .sidebar-middle {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-nav {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    min-height: 0;
+  }
+
   .sidebar-footer {
-    padding-top: 2.25rem;
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 30px;
     padding-left: max(var(--space-4), 16px);
     padding-right: max(var(--space-4), 16px);
-    padding-bottom: 1rem;
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar-footer-logout .btn {
@@ -598,6 +684,15 @@ a {
     display: none;
   }
 
+  .sidebar-mobile-top {
+    display: flex;
+  }
+
+  .sidebar-mobile-top .athlento-logo {
+    min-width: 0;
+    flex: 1;
+  }
+
   /* Alinear nombre con el texto de los .nav-link (padding del nav + del link) */
   .sidebar-user-top {
     padding-left: calc(0.75rem + 1.25rem);
@@ -606,13 +701,11 @@ a {
     padding-bottom: 0.5rem;
   }
 
-  /* Navegación: scroll interno, footer siempre visible */
+  /* El scroll es de .sidebar-middle (≤768px); aquí solo estilo de lista */
   .sidebar-nav {
-    flex: 1 1 0;
+    flex: 0 0 auto !important;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible !important;
     display: flex;
     flex-direction: column;
     padding: 1rem 0.75rem 0.5rem;
@@ -628,11 +721,14 @@ a {
     box-sizing: border-box;
   }
 
-  /* Footer fijo: Cerrar sesión siempre visible, safe-area para iPhone */
+  /* Logout pegado al borde inferior del drawer; margin-top: auto + padding pedido */
   .sidebar-footer {
     flex-shrink: 0;
-    padding: 2.25rem 1.25rem 1rem;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    margin-top: auto;
+    padding-top: 30px;
+    padding-left: max(16px, 1.25rem);
+    padding-right: max(16px, 1.25rem);
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     border-top: 0.5px solid var(--border-subtle);
     background: var(--bg-card);
   }

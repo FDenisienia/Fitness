@@ -102,24 +102,37 @@ export default function SidebarLayout({ basePath, role }) {
           <div className="sidebar-brand">
             <AthlentoLogo size="sm" />
           </div>
-          <div className="sidebar-user-top">
-            <span className="sidebar-user-top-text">
-              {user?.name} {user?.lastName}
-            </span>
+          <div className="sidebar-mobile-top">
+            <AthlentoLogo size="xs" className="sidebar-mobile-top-logo" />
+            <button
+              type="button"
+              className="sidebar-drawer-close"
+              onClick={closeSidebar}
+              aria-label="Cerrar menú"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
           </div>
-          <nav className="sidebar-nav flex-column" aria-label="Navegación principal">
-            {items.map(({ to, label, exact }) => (
-              <Nav.Link
-                key={to}
-                as={Link}
-                to={to}
-                className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
-                onClick={closeSidebar}
-              >
-                {label}
-              </Nav.Link>
-            ))}
-          </nav>
+          <div className="sidebar-middle">
+            <div className="sidebar-user-top">
+              <span className="sidebar-user-top-text">
+                {user?.name} {user?.lastName}
+              </span>
+            </div>
+            <nav className="sidebar-nav flex-column" aria-label="Navegación principal">
+              {items.map(({ to, label, exact }) => (
+                <Nav.Link
+                  key={to}
+                  as={Link}
+                  to={to}
+                  className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
+                  onClick={closeSidebar}
+                >
+                  {label}
+                </Nav.Link>
+              ))}
+            </nav>
+          </div>
           <div className="sidebar-footer">
             <div className="sidebar-footer-user">{user?.name} {user?.lastName}</div>
             <div className="sidebar-footer-logout">
