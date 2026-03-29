@@ -1,4 +1,5 @@
 import * as userService from '../services/userService.js';
+import * as userDeletionService from '../services/userDeletionService.js';
 
 export async function patchPassword(req, res, next) {
   try {
@@ -6,6 +7,16 @@ export async function patchPassword(req, res, next) {
       password: req.body.password,
     });
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Admin: eliminación dura por id de User (coach o alumno). */
+export async function destroy(req, res, next) {
+  try {
+    const result = await userDeletionService.deleteUser(req.user, req.params.id);
+    res.json({ success: true, data: result, message: 'Usuario eliminado' });
   } catch (err) {
     next(err);
   }

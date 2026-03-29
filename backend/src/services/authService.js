@@ -40,7 +40,11 @@ export async function login(email, password) {
     where: { email: email.toLowerCase() },
     include: {
       coach: true,
-      client: { include: { coach: { include: { user: { select: { id: true, status: true } } } } } },
+      client: {
+        include: {
+          coach: { include: { user: { select: { id: true, name: true, lastName: true, status: true } } } },
+        },
+      },
     },
   });
   if (!user) {
@@ -71,7 +75,11 @@ export async function getProfile(userId) {
     where: { id: userId },
     include: {
       coach: true,
-      client: { include: { coach: { include: { user: { select: { id: true, status: true } } } } } },
+      client: {
+        include: {
+          coach: { include: { user: { select: { id: true, name: true, lastName: true, status: true } } } },
+        },
+      },
     },
   });
   if (!user) {
@@ -145,6 +153,10 @@ function formatUser(u) {
     base.objective = u.client.objective;
     base.objectiveDescription = u.client.objectiveDescription;
     base.level = u.client.level;
+    if (u.client.coach?.user) {
+      const cu = u.client.coach.user;
+      base.coachUser = { id: cu.id, name: cu.name, lastName: cu.lastName };
+    }
   }
   return base;
 }

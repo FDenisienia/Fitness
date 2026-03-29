@@ -5,7 +5,7 @@ import ChangePasswordModal from '../../components/ChangePasswordModal';
 import {
   deactivateCoachAsAdmin,
   activateCoachAsAdmin,
-  softDeleteCoachAsAdmin,
+  hardDeleteCoachAsAdmin,
 } from '../../services/coachAdminService';
 import { SUBSCRIPTION_PLANS } from '../../data/mockData';
 
@@ -141,7 +141,7 @@ export default function CoachesPage({ embedded = false }) {
     if (!actionCoach) return;
     setActionLoading(true);
     try {
-      await softDeleteCoachAsAdmin(actionCoach.id);
+      await hardDeleteCoachAsAdmin(actionCoach.id);
       await loadCoaches();
       closeConfirm();
     } catch (err) {
@@ -342,8 +342,8 @@ export default function CoachesPage({ embedded = false }) {
         <Modal.Header closeButton><Modal.Title>Eliminar coach</Modal.Title></Modal.Header>
         <Modal.Body>
           <Alert variant="danger" className="mb-0">
-            Se dará de baja a <strong>{actionCoach?.name} {actionCoach?.lastName}</strong> (eliminación lógica). Sus clientes quedarán desactivados y
-            <strong> no podrán quedar huérfanos</strong>: siguen vinculados al coach en el sistema, pero sin acceso hasta que un administrador gestione la cuenta.
+            Se eliminará de forma <strong>permanente</strong> a <strong>{actionCoach?.name} {actionCoach?.lastName}</strong>, todos sus alumnos, rutinas,
+            ejercicios personalizados, chats y demás datos asociados. Esta acción no se puede deshacer.
           </Alert>
         </Modal.Body>
         <Modal.Footer>

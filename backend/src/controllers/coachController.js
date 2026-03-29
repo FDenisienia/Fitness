@@ -1,4 +1,5 @@
 import * as coachService from '../services/coachService.js';
+import * as userDeletionService from '../services/userDeletionService.js';
 
 export async function list(req, res, next) {
   try {
@@ -54,9 +55,20 @@ export async function activate(req, res, next) {
   }
 }
 
+/** Eliminación dura: alumnos, rutinas, ejercicios del coach, relaciones y User. */
+export async function hardDelete(req, res, next) {
+  try {
+    const result = await userDeletionService.deleteCoachByProfileId(req.user, req.params.id);
+    res.json({ success: true, data: result, message: 'Coach y datos relacionados eliminados' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Baja lógica (deleted_at); mismo alcance admin que antes. */
 export async function softDelete(req, res, next) {
   try {
-    const result = await coachService.softDeleteCoach(req.params.id, req.user.id);
+    const result = await userDeletionService.softDeleteCoachByProfileId(req.user, req.params.id);
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);

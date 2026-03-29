@@ -19,6 +19,13 @@ function mapMessage(m) {
   };
 }
 
+function clampMessageLimit(raw, def = 200, max = 500) {
+  if (raw == null || raw === '') return def;
+  const n = parseInt(String(Array.isArray(raw) ? raw[0] : raw), 10);
+  if (!Number.isFinite(n)) return def;
+  return Math.min(max, Math.max(1, n));
+}
+
 async function getDefaultAdminUserId() {
   const admin = await prisma.user.findFirst({
     where: { role: 'admin', status: 'active' },
@@ -125,15 +132,17 @@ async function markRead(conv, role) {
   }
 }
 
-export async function listMessages({ userId, role, conversationId }) {
+export async function listMessages({ userId, role, conversationId, limit: limitRaw }) {
   const { conv } = await assertAdminCoachAccess({ userId, role, conversationId });
   await markRead(conv, role);
+  const take = clampMessageLimit(limitRaw);
 
-  const messages = await prisma.adminCoachChatMessage.findMany({
+  const rows = await prisma.adminCoachChatMessage.findMany({
     where: { conversationId: conv.id },
-    orderBy: { createdAt: 'asc' },
-    take: 500,
+    orderBy: { createdAt: 'desc' },
+    take,
   });
+  const messages = rows.reverse();
   return messages.map(mapMessage);
 }
 

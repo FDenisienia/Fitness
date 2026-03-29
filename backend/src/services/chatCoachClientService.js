@@ -9,6 +9,20 @@ function preview(text) {
   return `${t.slice(0, PREVIEW_MAX - 3)}...`;
 }
 
+function normalizeId(val) {
+  if (val == null || val === '') return undefined;
+  const v = Array.isArray(val) ? val[0] : val;
+  if (v == null || v === '') return undefined;
+  return String(v).trim();
+}
+
+function clampMessageLimit(raw, def = 200, max = 500) {
+  if (raw == null || raw === '') return def;
+  const n = parseInt(String(Array.isArray(raw) ? raw[0] : raw), 10);
+  if (!Number.isFinite(n)) return def;
+  return Math.min(max, Math.max(1, n));
+}
+
 function mapMessage(m) {
   return {
     id: m.id,
@@ -41,21 +55,24 @@ async function getClientByUserId(userId) {
 }
 
 export async function getOrCreateConversation(clientId, coachId) {
-  let conv = await prisma.conversation.findFirst({
-    where: { clientId, coachId },
+  return prisma.conversation.upsert({
+    where: { coachId_clientId: { coachId, clientId } },
+    create: { clientId, coachId },
+    update: {},
   });
-  if (!conv) {
-    conv = await prisma.conversation.create({
-      data: { clientId, coachId },
-    });
-  }
-  return conv;
 }
 
-/** Cliente: conversación con su coach (crea fila si no existe). */
+/** Cliente: solo si existe al menos un mensaje (no crea conversación vacía). */
 export async function getMyConversationClient(userId) {
   const client = await getClientByUserId(userId);
-  const conv = await getOrCreateConversation(client.id, client.coachId);
+  const conv = await prisma.conversation.findFirst({
+    where: {
+      clientId: client.id,
+      coachId: client.coachId,
+      messages: { some: {} },
+    },
+  });
+  if (!conv) return null;
   const coachUser = client.coach.user;
   return {
     id: conv.id,
@@ -75,54 +92,59 @@ export async function getMyConversationClient(userId) {
   };
 }
 
-/** Coach: lista de alumnos con estado de chat (sin crear conversaciones vacías). */
+/** Coach: solo conversaciones con al menos un mensaje, ordenadas por actividad reciente. */
 export async function listInboxForCoach(userId) {
   const coach = await getCoachByUserId(userId);
-  const clients = await prisma.client.findMany({
-    where: { coachId: coach.id },
-    include: { user: true },
-    orderBy: { createdAt: 'desc' },
-  });
   const convs = await prisma.conversation.findMany({
-    where: { coachId: coach.id },
+    where: {
+      coachId: coach.id,
+      messages: { some: {} },
+    },
+    include: {
+      client: { include: { user: true } },
+    },
+    orderBy: [{ lastMessageAt: 'desc' }, { updatedAt: 'desc' }],
   });
-  const byClient = new Map(convs.map((c) => [c.clientId, c]));
-  return clients.map((cl) => {
-    const conv = byClient.get(cl.id);
-    return {
-      clientId: cl.id,
-      clientUserId: cl.user.id,
-      otherParticipant: {
-        id: cl.user.id,
-        name: cl.user.name,
-        lastName: cl.user.lastName,
-      },
-      conversationId: conv?.id ?? null,
-      lastMessageAt: conv?.lastMessageAt?.toISOString() ?? null,
-      lastMessagePreview: conv?.lastMessagePreview ?? null,
-      clientUnreadCount: conv?.clientUnreadCount ?? 0,
-      coachUnreadCount: conv?.coachUnreadCount ?? 0,
-    };
-  });
+  return convs.map((conv) => ({
+    clientId: conv.clientId,
+    clientUserId: conv.client.user.id,
+    otherParticipant: {
+      id: conv.client.user.id,
+      name: conv.client.user.name,
+      lastName: conv.client.user.lastName,
+    },
+    conversationId: conv.id,
+    lastMessageAt: conv.lastMessageAt?.toISOString() ?? null,
+    lastMessagePreview: conv.lastMessagePreview,
+    clientUnreadCount: conv.clientUnreadCount,
+    coachUnreadCount: conv.coachUnreadCount,
+  }));
 }
 
-async function resolveConversationForCoach(userId, conversationId, clientId) {
+async function resolveCoachConversationForList(userId, rawConversationId, rawClientId) {
+  const conversationId = normalizeId(rawConversationId);
+  const clientId = normalizeId(rawClientId);
   const coach = await getCoachByUserId(userId);
-  if (clientId) {
-    const client = await prisma.client.findFirst({
-      where: { id: clientId, coachId: coach.id },
-    });
-    if (!client) throw new NotFoundError('Cliente');
-    const conv = await getOrCreateConversation(client.id, coach.id);
-    return { conv, coach };
-  }
+
   if (conversationId) {
     const conv = await prisma.conversation.findFirst({
-      where: { id: conversationId, coachId: coach.id },
+      where: { id: conversationId, coachId: coach.id, messages: { some: {} } },
     });
     if (!conv) throw new NotFoundError('Conversación');
-    return { conv, coach };
+    return conv;
   }
+
+  if (clientId) {
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) throw new NotFoundError('Cliente');
+    if (client.coachId !== coach.id) {
+      throw new ForbiddenError('No puedes enviar mensajes a este alumno');
+    }
+    return prisma.conversation.findFirst({
+      where: { coachId: coach.id, clientId: client.id, messages: { some: {} } },
+    });
+  }
+
   throw new BadRequestError('Indica clientId o conversationId');
 }
 
@@ -143,29 +165,43 @@ async function markConversationRead(conv, role) {
   }
 }
 
-export async function listMessages({ userId, role, conversationId, clientId }) {
+export async function listMessages({ userId, role, conversationId, clientId, limit: limitRaw }) {
+  const take = clampMessageLimit(limitRaw);
   let conv;
   if (role === 'cliente') {
     const client = await getClientByUserId(userId);
-    if (conversationId) {
+    const cid = normalizeId(conversationId);
+    if (cid) {
       conv = await prisma.conversation.findFirst({
-        where: { id: conversationId, clientId: client.id },
+        where: { id: cid, clientId: client.id, messages: { some: {} } },
       });
     } else {
-      conv = await getOrCreateConversation(client.id, client.coachId);
+      conv = await prisma.conversation.findFirst({
+        where: {
+          clientId: client.id,
+          coachId: client.coachId,
+          messages: { some: {} },
+        },
+      });
     }
-    if (!conv) throw new NotFoundError('Conversación');
+    if (!conv) {
+      return [];
+    }
   } else {
-    ({ conv } = await resolveConversationForCoach(userId, conversationId, clientId));
+    conv = await resolveCoachConversationForList(userId, conversationId, clientId);
+    if (!conv) {
+      return [];
+    }
   }
 
   await markConversationRead(conv, role);
 
-  const messages = await prisma.chatMessage.findMany({
+  const rows = await prisma.chatMessage.findMany({
     where: { conversationId: conv.id },
-    orderBy: { createdAt: 'asc' },
-    take: 500,
+    orderBy: { createdAt: 'desc' },
+    take,
   });
+  const messages = rows.reverse();
   return messages.map(mapMessage);
 }
 
@@ -179,32 +215,96 @@ function validateContent(content) {
 
 export async function sendMessage({ userId, role, conversationId, clientId, content }) {
   const text = validateContent(content);
-  let conv;
+  const convConversationId = normalizeId(conversationId);
+  const convClientId = normalizeId(clientId);
+
   if (role === 'cliente') {
     const client = await getClientByUserId(userId);
-    conv = await getOrCreateConversation(client.id, client.coachId);
-  } else {
-    ({ conv } = await resolveConversationForCoach(userId, conversationId, clientId));
+    const msg = await prisma.$transaction(async (tx) => {
+      const conv = await tx.conversation.upsert({
+        where: { coachId_clientId: { coachId: client.coachId, clientId: client.id } },
+        create: { clientId: client.id, coachId: client.coachId },
+        update: {},
+      });
+      const m = await tx.chatMessage.create({
+        data: {
+          conversationId: conv.id,
+          senderId: userId,
+          senderRole: 'cliente',
+          content: text,
+        },
+      });
+      await tx.conversation.update({
+        where: { id: conv.id },
+        data: {
+          lastMessageAt: m.createdAt,
+          lastMessagePreview: preview(text),
+          coachUnreadCount: { increment: 1 },
+        },
+      });
+      return m;
+    });
+    return mapMessage(msg);
   }
 
-  const senderRole = role === 'cliente' ? 'cliente' : 'coach';
+  if (!convClientId && !convConversationId) {
+    throw new BadRequestError('Indica clientId o conversationId');
+  }
+
   const msg = await prisma.$transaction(async (tx) => {
+    const coachRow = await tx.coach.findUnique({ where: { userId } });
+    if (!coachRow) throw new ForbiddenError('No eres coach');
+
+    let conv;
+
+    if (convClientId && convConversationId) {
+      const client = await tx.client.findUnique({ where: { id: convClientId } });
+      if (!client) throw new NotFoundError('Cliente');
+      if (client.coachId !== coachRow.id) {
+        throw new ForbiddenError('No puedes enviar mensajes a este alumno');
+      }
+      conv = await tx.conversation.findFirst({
+        where: {
+          id: convConversationId,
+          coachId: coachRow.id,
+          clientId: client.id,
+        },
+      });
+      if (!conv) {
+        throw new ForbiddenError('La conversación no corresponde a este alumno');
+      }
+    } else if (convClientId) {
+      const client = await tx.client.findUnique({ where: { id: convClientId } });
+      if (!client) throw new NotFoundError('Cliente');
+      if (client.coachId !== coachRow.id) {
+        throw new ForbiddenError('No puedes enviar mensajes a este alumno');
+      }
+      conv = await tx.conversation.upsert({
+        where: { coachId_clientId: { coachId: coachRow.id, clientId: client.id } },
+        create: { clientId: client.id, coachId: coachRow.id },
+        update: {},
+      });
+    } else {
+      conv = await tx.conversation.findFirst({
+        where: { id: convConversationId, coachId: coachRow.id },
+      });
+      if (!conv) throw new NotFoundError('Conversación');
+    }
+
     const m = await tx.chatMessage.create({
       data: {
         conversationId: conv.id,
         senderId: userId,
-        senderRole,
+        senderRole: 'coach',
         content: text,
       },
     });
-    const incCoach = senderRole === 'cliente';
     await tx.conversation.update({
       where: { id: conv.id },
       data: {
         lastMessageAt: m.createdAt,
         lastMessagePreview: preview(text),
-        coachUnreadCount: incCoach ? { increment: 1 } : undefined,
-        clientUnreadCount: !incCoach ? { increment: 1 } : undefined,
+        clientUnreadCount: { increment: 1 },
       },
     });
     return m;
@@ -227,9 +327,9 @@ function buildWorkoutCompletionMessage({ routineName, dateLabel, rpe, sensations
   if (sens) lines.push('', `Sensaciones: ${sens}`);
   const fb = typeof feedback === 'string' ? feedback.trim() : '';
   if (fb) lines.push('', `Mensaje / feedback: ${fb}`);
-  let text = lines.join('\n');
-  if (text.length > 8000) text = `${text.slice(0, 7997)}...`;
-  return text;
+  let t = lines.join('\n');
+  if (t.length > 8000) t = `${t.slice(0, 7997)}...`;
+  return t;
 }
 
 /**
@@ -247,9 +347,8 @@ export async function notifyCoachWorkoutCompleted({
   feedback,
 }) {
   if (!clientUserId || !clientId || !coachId) return;
-  const conv = await getOrCreateConversation(clientId, coachId);
   const dateLabel = formatWorkoutDateLabel(workoutDate);
-  const text = buildWorkoutCompletionMessage({
+  const body = buildWorkoutCompletionMessage({
     routineName,
     dateLabel,
     rpe,
@@ -258,19 +357,24 @@ export async function notifyCoachWorkoutCompleted({
   });
 
   await prisma.$transaction(async (tx) => {
+    const conv = await tx.conversation.upsert({
+      where: { coachId_clientId: { coachId, clientId } },
+      create: { clientId, coachId },
+      update: {},
+    });
     const m = await tx.chatMessage.create({
       data: {
         conversationId: conv.id,
         senderId: clientUserId,
         senderRole: 'cliente',
-        content: text,
+        content: body,
       },
     });
     await tx.conversation.update({
       where: { id: conv.id },
       data: {
         lastMessageAt: m.createdAt,
-        lastMessagePreview: preview(text),
+        lastMessagePreview: preview(body),
         coachUnreadCount: { increment: 1 },
       },
     });

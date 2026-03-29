@@ -7,5 +7,8 @@ export const coachesApi = {
   update: (id, data) => api.put(`/coaches/${id}`, data),
   deactivate: (id) => api.post(`/coaches/${id}/deactivate`, {}),
   activate: (id) => api.post(`/coaches/${id}/activate`, {}),
+  /** Eliminación dura (cascada). */
   remove: (id) => api.delete(`/coaches/${id}`),
+  /** Baja lógica (deleted_at en Coach). */
+  softDelete: (id) => api.post(`/coaches/${id}/soft-delete`, {}),
 };

@@ -4,7 +4,9 @@ export async function listByCoach(req, res, next) {
   try {
     const coachId = req.user.coach?.id;
     if (!coachId) return res.status(403).json({ success: false, error: 'No eres coach' });
-    const clients = await clientService.listClientsByCoach(coachId);
+    const raw = req.query?.expand;
+    const expand = typeof raw === 'string' ? raw.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const clients = await clientService.listClientsByCoach(coachId, { expand });
     res.json({ success: true, data: clients });
   } catch (err) {
     next(err);
@@ -51,9 +53,10 @@ export async function update(req, res, next) {
 
 export async function remove(req, res, next) {
   try {
-    const coachId = req.user.coach?.id;
-    if (!coachId) return res.status(403).json({ success: false, error: 'No eres coach' });
-    await clientService.deleteClient(req.params.id, coachId);
+    if (req.userRole !== 'coach' || !req.user.coach?.id) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para esta acción' });
+    }
+    await clientService.deleteClient(req.params.id, req.user);
     res.json({ success: true });
   } catch (err) {
     next(err);

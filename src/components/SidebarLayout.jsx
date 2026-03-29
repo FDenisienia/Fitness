@@ -7,6 +7,7 @@ import AthlentoLogo from './AthlentoLogo';
 import { getInitials } from '../utils/clientDisplay';
 import { chatApi } from '../api/chat';
 import { formatLoginUnreadNotice, unreadBadgeForNavPath } from '../utils/unreadMessages';
+import { usePageVisibleInterval } from '../hooks/usePageVisibleInterval';
 
 const LOGIN_UNREAD_KEY = 'athlento_login_unread';
 
@@ -78,17 +79,17 @@ export default function SidebarLayout({ basePath, role }) {
 
   useEffect(() => {
     fetchUnread();
-    const t = setInterval(fetchUnread, 45000);
     const onFocus = () => fetchUnread();
     const onUnreadEvent = () => fetchUnread();
     window.addEventListener('focus', onFocus);
     window.addEventListener('athlento-unread-refresh', onUnreadEvent);
     return () => {
-      clearInterval(t);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('athlento-unread-refresh', onUnreadEvent);
     };
   }, [fetchUnread]);
+
+  usePageVisibleInterval(fetchUnread, 60000);
 
   useEffect(() => {
     const raw = sessionStorage.getItem(LOGIN_UNREAD_KEY);
@@ -193,7 +194,6 @@ export default function SidebarLayout({ basePath, role }) {
                     className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
                     onClick={() => {
                       closeSidebar();
-                      fetchUnread();
                     }}
                     aria-label={badge > 0 ? `${label}, ${badge} sin leer` : label}
                   >

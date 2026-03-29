@@ -56,6 +56,9 @@ model Coach {
   clients         Client[]
   routines        Routine[]
   adminConversations AdminCoachConversation[]
+  /// Ejercicios de biblioteca personal (created_by_id apunta a Coach.id)
+  customExercises ExerciseLibrary[] @relation("ExerciseLibraryCreatedByCoach")
+  conversations   Conversation[]
 }
 
 // ===== CLIENTES =====
@@ -93,12 +96,13 @@ model ExerciseLibrary {
   caloriasPorRep Float?  @map("calorias_por_rep")
   caloriasPorMin Float?  @map("calorias_por_min")
   videoUrl      String?  @map("video_url")
-  createdById   String?  @map("created_by_id") // null = global, coach id = personal
+  createdById   String?  @map("created_by_id") // null = global; si no es null = Coach.id
   scope         String   @default("global") // global | coach
   status        String   @default("active")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  createdByCoach Coach?  @relation("ExerciseLibraryCreatedByCoach", fields: [createdById], references: [id], onDelete: Cascade)
   routineExercises RoutineExercise[]
   progressLogs     ProgressLog[]
 }
@@ -232,7 +236,10 @@ model Conversation {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  coach            Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
   messages         ChatMessage[]
+
+  @@unique([coachId, clientId], map: "conversation_coach_client_unique")
 }
 
 model ChatMessage {

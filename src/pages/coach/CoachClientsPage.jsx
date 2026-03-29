@@ -62,21 +62,14 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     setError('');
     try {
       const [clientsRes, routinesRes] = await Promise.all([
-        clientsApi.list(),
+        clientsApi.list({ expand: ['assignments', 'plannedWorkouts'] }),
         routinesApi.list(),
       ]);
       const cList = clientsRes.data || [];
       setClients(cList);
       setRoutines(routinesRes.data || []);
-      const clientDataPromises = cList.map((c) =>
-        Promise.all([
-          clientRoutinesApi.listByClient(c.id).catch(() => ({ data: [] })),
-          plannedWorkoutsApi.listByClient(c.id).catch(() => ({ data: [] })),
-        ]).then(([cr, pw]) => ({ id: c.id, cr: cr.data || [], pw: pw.data || [] }))
-      );
-      const clientData = await Promise.all(clientDataPromises);
-      const crMap = Object.fromEntries(clientData.map((d) => [d.id, d.cr]));
-      const pwMap = Object.fromEntries(clientData.map((d) => [d.id, d.pw]));
+      const crMap = Object.fromEntries(cList.map((c) => [c.id, c.clientRoutines || []]));
+      const pwMap = Object.fromEntries(cList.map((c) => [c.id, c.plannedWorkouts || []]));
       setClientRoutines(crMap);
       setPlannedWorkouts(pwMap);
     } catch (err) {
@@ -208,9 +201,27 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     try {
       await clientsApi.delete(c.id);
       if (clientId === c.id) navigate(basePath);
-      loadData();
+      setClients((prev) => prev.filter((x) => x.id !== c.id));
+      setClientRoutines((prev) => {
+        const next = { ...prev };
+        delete next[c.id];
+        return next;
+      });
+      setPlannedWorkouts((prev) => {
+        const next = { ...prev };
+        delete next[c.id];
+        return next;
+      });
+      await loadData();
     } catch (err) {
-      alert(err.message || 'Error al eliminar');
+      const serverMsg = err?.data?.error;
+      const msg =
+        err?.status === 403
+          ? serverMsg || 'No tienes permiso para eliminar a este alumno.'
+          : err?.status === 404
+            ? serverMsg || 'El alumno ya no existe o fue eliminado.'
+            : serverMsg || err.message || 'Error al eliminar';
+      alert(msg);
     }
   };
 

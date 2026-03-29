@@ -27,14 +27,24 @@ export async function coachClientInbox(req, res, next) {
   }
 }
 
+function firstQueryParam(val) {
+  if (val == null) return undefined;
+  const v = Array.isArray(val) ? val[0] : val;
+  const s = String(v).trim();
+  return s === '' ? undefined : s;
+}
+
 export async function coachClientMessages(req, res, next) {
   try {
-    const { conversationId, clientId } = req.query;
+    const conversationId = firstQueryParam(req.query?.conversationId);
+    const clientId = firstQueryParam(req.query?.clientId);
+    const limit = firstQueryParam(req.query?.limit);
     const data = await chatCoachClient.listMessages({
       userId: req.userId,
       role: req.userRole,
-      conversationId: conversationId || undefined,
-      clientId: clientId || undefined,
+      conversationId,
+      clientId,
+      limit,
     });
     res.json({ success: true, data });
   } catch (err) {
@@ -44,12 +54,15 @@ export async function coachClientMessages(req, res, next) {
 
 export async function coachClientSend(req, res, next) {
   try {
-    const { content, conversationId, clientId } = req.body || {};
+    const body = req.body || {};
+    const content = body.content;
+    const conversationId = firstQueryParam(body.conversationId);
+    const clientId = firstQueryParam(body.clientId);
     const data = await chatCoachClient.sendMessage({
       userId: req.userId,
       role: req.userRole,
-      conversationId: conversationId || undefined,
-      clientId: clientId || undefined,
+      conversationId,
+      clientId,
       content,
     });
     res.status(201).json({ success: true, data });
@@ -86,10 +99,12 @@ export async function adminCoachInbox(req, res, next) {
 export async function adminCoachMessages(req, res, next) {
   try {
     const { conversationId } = req.params;
+    const limit = firstQueryParam(req.query?.limit);
     const data = await chatAdminCoach.listMessages({
       userId: req.userId,
       role: req.userRole,
       conversationId,
+      limit,
     });
     res.json({ success: true, data });
   } catch (err) {

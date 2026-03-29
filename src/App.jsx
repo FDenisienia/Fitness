@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PlanProvider } from './context/PlanContext';
@@ -6,34 +6,35 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { PlanGuard } from './components/PlanGuard';
 import PublicLayout from './components/PublicLayout';
 import SidebarLayout from './components/SidebarLayout';
+import LoadingSpinner from './components/LoadingSpinner';
 
 import LandingPage from './pages/public/LandingPage';
 import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminPlansPage from './pages/admin/AdminPlansPage';
-import ExerciseLibraryPage from './pages/admin/ExerciseLibraryPage';
-import ConsultationsPage from './pages/admin/ConsultationsPage';
-import UsersPage from './pages/admin/UsersPage';
-import RoutinesPage from './pages/admin/RoutinesPage';
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'));
+const ExerciseLibraryPage = lazy(() => import('./pages/admin/ExerciseLibraryPage'));
+const ConsultationsPage = lazy(() => import('./pages/admin/ConsultationsPage'));
+const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const RoutinesPage = lazy(() => import('./pages/admin/RoutinesPage'));
 
-import CoachDashboard from './pages/coach/CoachDashboard';
-import CoachRoutinesPage from './pages/coach/CoachRoutinesPage';
-import CoachRoutineDetailPage from './pages/coach/CoachRoutineDetailPage';
-import CoachCalendarPage from './pages/coach/CoachCalendarPage';
-import CoachExerciseLibraryPage from './pages/coach/CoachExerciseLibraryPage';
-import CoachWeightPage from './pages/coach/CoachWeightPage';
-import CoachConsultationsPage from './pages/coach/CoachConsultationsPage';
-import CoachSupportPage from './pages/coach/CoachSupportPage';
+const CoachDashboard = lazy(() => import('./pages/coach/CoachDashboard'));
+const CoachRoutinesPage = lazy(() => import('./pages/coach/CoachRoutinesPage'));
+const CoachRoutineDetailPage = lazy(() => import('./pages/coach/CoachRoutineDetailPage'));
+const CoachCalendarPage = lazy(() => import('./pages/coach/CoachCalendarPage'));
+const CoachExerciseLibraryPage = lazy(() => import('./pages/coach/CoachExerciseLibraryPage'));
+const CoachWeightPage = lazy(() => import('./pages/coach/CoachWeightPage'));
+const CoachConsultationsPage = lazy(() => import('./pages/coach/CoachConsultationsPage'));
+const CoachSupportPage = lazy(() => import('./pages/coach/CoachSupportPage'));
 
-import ClientDashboard from './pages/client/ClientDashboard';
-import ClientRoutinesPage from './pages/client/ClientRoutinesPage';
-import ClientProfilePage from './pages/client/ClientProfilePage';
-import ClientCalendarPage from './pages/client/ClientCalendarPage';
-import ClientSeguimientoPage from './pages/client/ClientSeguimientoPage';
-import ClientConsultationsPage from './pages/client/ClientConsultationsPage';
+const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard'));
+const ClientRoutinesPage = lazy(() => import('./pages/client/ClientRoutinesPage'));
+const ClientProfilePage = lazy(() => import('./pages/client/ClientProfilePage'));
+const ClientCalendarPage = lazy(() => import('./pages/client/ClientCalendarPage'));
+const ClientSeguimientoPage = lazy(() => import('./pages/client/ClientSeguimientoPage'));
+const ClientConsultationsPage = lazy(() => import('./pages/client/ClientConsultationsPage'));
 
 function RedirectCoachAlumnosToUsuarios() {
   const { clientId } = useParams();
@@ -52,6 +53,7 @@ export default function App() {
   return (
     <AuthProvider>
       <PlanProvider>
+      <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
@@ -111,6 +113,7 @@ export default function App() {
         <Route path="/dashboard" element={<RoleRedirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       </PlanProvider>
     </AuthProvider>
   );

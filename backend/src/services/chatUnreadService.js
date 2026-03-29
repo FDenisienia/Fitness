@@ -7,11 +7,11 @@ export async function getUnreadSummary(userId, role) {
   if (role === 'cliente') {
     const client = await prisma.client.findUnique({
       where: { userId },
-      select: { id: true },
+      select: { id: true, coachId: true },
     });
     if (!client) return { coachClientUnread: 0, adminCoachUnread: 0 };
     const conv = await prisma.conversation.findFirst({
-      where: { clientId: client.id },
+      where: { clientId: client.id, coachId: client.coachId, messages: { some: {} } },
       select: { clientUnreadCount: true },
     });
     return {
@@ -28,7 +28,7 @@ export async function getUnreadSummary(userId, role) {
     if (!coach) return { coachClientUnread: 0, adminCoachUnread: 0 };
     const [agg, adminConv] = await Promise.all([
       prisma.conversation.aggregate({
-        where: { coachId: coach.id },
+        where: { coachId: coach.id, messages: { some: {} } },
         _sum: { coachUnreadCount: true },
       }),
       prisma.adminCoachConversation.findFirst({

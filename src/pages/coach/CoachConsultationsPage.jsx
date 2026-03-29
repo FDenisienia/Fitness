@@ -1,12 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { MessagingShell } from '../../components/chat';
 import { chatApi } from '../../api/chat';
 import { notifyUnreadRefresh } from '../../utils/unreadMessages';
+import { usePageVisibleInterval } from '../../hooks/usePageVisibleInterval';
+
+const CHAT_POLL_MS = 12000;
 
 function normalizeInboxRow(row) {
   return {
-    key: row.conversationId || `client-${row.clientId}`,
+    key: `client-${row.clientId}`,
     conversationId: row.conversationId,
     clientId: row.clientId,
     otherParticipant: row.otherParticipant,
@@ -27,6 +30,15 @@ export default function CoachConsultationsPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
+  const conversationsRef = useRef(conversations);
+  const selectedKeyRef = useRef(selectedKey);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+  useEffect(() => {
+    selectedKeyRef.current = selectedKey;
+  }, [selectedKey]);
+
   const loadInbox = useCallback(async () => {
     const { data } = await chatApi.coachClientInbox();
     const n = (data || []).map(normalizeInboxRow);
@@ -39,8 +51,9 @@ export default function CoachConsultationsPage() {
     return n;
   }, []);
 
-  const loadMessages = useCallback(async () => {
-    const row = conversations.find((c) => c.key === selectedKey);
+  const loadMessagesForSelection = useCallback(async () => {
+    const key = selectedKeyRef.current;
+    const row = conversationsRef.current.find((c) => c.key === key);
     if (!row?.clientId) return;
     const params = row.conversationId
       ? { conversationId: row.conversationId }
@@ -48,7 +61,7 @@ export default function CoachConsultationsPage() {
     const { data } = await chatApi.coachClientMessages(params);
     setMessages(data);
     notifyUnreadRefresh();
-  }, [conversations, selectedKey]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,33 +89,36 @@ export default function CoachConsultationsPage() {
     let cancelled = false;
     (async () => {
       try {
-        await loadMessages();
+        await loadMessagesForSelection();
       } catch (e) {
         if (!cancelled) setError(e.message || 'Error al cargar mensajes');
       }
     })();
-    const t = setInterval(() => {
-      loadInbox().catch(() => {});
-      loadMessages().catch(() => {});
-    }, 5000);
     return () => {
       cancelled = true;
-      clearInterval(t);
     };
-  }, [selectedKey, loadInbox, loadMessages]);
+  }, [selectedKey, loadMessagesForSelection]);
+
+  usePageVisibleInterval(
+    useCallback(() => {
+      loadInbox().catch(() => {});
+      if (selectedKeyRef.current) loadMessagesForSelection().catch(() => {});
+    }, [loadInbox, loadMessagesForSelection]),
+    CHAT_POLL_MS
+  );
 
   const onSendMessage = async (text) => {
-    const row = conversations.find((c) => c.key === selectedKey);
+    const row = conversationsRef.current.find((c) => c.key === selectedKeyRef.current);
     if (!row?.clientId) return;
     setSending(true);
     setError(null);
     try {
       await chatApi.coachClientSend({
         content: text,
-        conversationId: row.conversationId || undefined,
-        clientId: row.conversationId ? undefined : row.clientId,
+        clientId: row.clientId,
+        ...(row.conversationId ? { conversationId: row.conversationId } : {}),
       });
-      await loadMessages();
+      await loadMessagesForSelection();
       await loadInbox();
     } catch (e) {
       setError(e.message || 'No se pudo enviar');

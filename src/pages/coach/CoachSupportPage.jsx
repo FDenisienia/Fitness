@@ -1,8 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { MessagingShell } from '../../components/chat';
 import { chatApi } from '../../api/chat';
 import { notifyUnreadRefresh } from '../../utils/unreadMessages';
+import { usePageVisibleInterval } from '../../hooks/usePageVisibleInterval';
+
+const CHAT_POLL_MS = 12000;
 
 function normalizeConv(conv) {
   return [
@@ -28,6 +31,11 @@ export default function CoachSupportPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
+  const selectedKeyRef = useRef(selectedKey);
+  useEffect(() => {
+    selectedKeyRef.current = selectedKey;
+  }, [selectedKey]);
+
   const loadConversation = useCallback(async () => {
     const { data } = await chatApi.adminCoachConversation();
     const n = normalizeConv(data);
@@ -37,8 +45,10 @@ export default function CoachSupportPage() {
     return data;
   }, []);
 
-  const loadMessages = useCallback(async (convId) => {
-    const { data } = await chatApi.adminCoachMessages(convId);
+  const loadMessagesForSelection = useCallback(async () => {
+    const id = selectedKeyRef.current;
+    if (!id) return;
+    const { data } = await chatApi.adminCoachMessages(id);
     setMessages(data);
     notifyUnreadRefresh();
   }, []);
@@ -49,8 +59,7 @@ export default function CoachSupportPage() {
       setLoading(true);
       setError(null);
       try {
-        const conv = await loadConversation();
-        if (!cancelled && conv?.id) await loadMessages(conv.id);
+        await loadConversation();
       } catch (e) {
         if (!cancelled) setError(e.message || 'Error al cargar soporte');
       } finally {
@@ -60,25 +69,39 @@ export default function CoachSupportPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadConversation, loadMessages]);
+  }, [loadConversation]);
 
   useEffect(() => {
     if (!selectedKey) return undefined;
-    const tick = () => {
-      loadConversation().catch(() => {});
-      loadMessages(selectedKey).catch(() => {});
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadMessagesForSelection();
+      } catch (e) {
+        if (!cancelled) setError(e.message || 'Error al cargar mensajes');
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
-    const t = setInterval(tick, 5000);
-    return () => clearInterval(t);
-  }, [selectedKey, loadConversation, loadMessages]);
+  }, [selectedKey, loadMessagesForSelection]);
+
+  usePageVisibleInterval(
+    useCallback(() => {
+      loadConversation().catch(() => {});
+      if (selectedKeyRef.current) loadMessagesForSelection().catch(() => {});
+    }, [loadConversation, loadMessagesForSelection]),
+    CHAT_POLL_MS
+  );
 
   const onSendMessage = async (text) => {
-    if (!selectedKey) return;
+    const id = selectedKeyRef.current;
+    if (!id) return;
     setSending(true);
     setError(null);
     try {
-      await chatApi.adminCoachSend(selectedKey, text);
-      await loadMessages(selectedKey);
+      await chatApi.adminCoachSend(id, text);
+      await loadMessagesForSelection();
       await loadConversation();
     } catch (e) {
       setError(e.message || 'No se pudo enviar');

@@ -19,4 +19,13 @@ router.patch(
 /** Admin: coaches que creó. Coach: sus clientes. Cliente: sin acceso (403). */
 router.get('/', authMiddleware, attachUser, requireRole('admin', 'coach'), userController.list);
 
+/** Admin: borrado en cascada por user id (coach o alumno). */
+router.delete(
+  '/:id',
+  authMiddleware,
+  attachUser,
+  requireRole('admin'),
+  userController.destroy
+);
+
 export default router;

@@ -13,7 +13,14 @@ export async function activateCoachAsAdmin(coachId) {
   return res.data;
 }
 
+/** Baja lógica del coach (sin borrar filas). */
 export async function softDeleteCoachAsAdmin(coachId) {
+  const res = await coachesApi.softDelete(coachId);
+  return res.data;
+}
+
+/** Eliminación permanente: alumnos, rutinas, ejercicios del coach y relaciones. */
+export async function hardDeleteCoachAsAdmin(coachId) {
   const res = await coachesApi.remove(coachId);
   return res.data;
 }

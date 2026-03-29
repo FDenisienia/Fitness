@@ -5,7 +5,7 @@ import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import ConversationDetails from './ConversationDetails';
-import { EmptyNoConversation } from './EmptyStates';
+import { EmptyNoConversation, EmptyInboxFirst } from './EmptyStates';
 import { contextBadgeLabel, inferConversationKind, roleLabelForOther } from './chatTypes';
 import { CHAT_STATUS, getConvEntry, loadConvPrefs, setConvEntry } from '../../utils/chatLocalState';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -57,6 +57,8 @@ export default function MessagingShell({
   sidebarTitle,
   emptyHint,
   emptyFootnote,
+  /** Contenido opcional cuando la lista lateral queda vacía (p. ej. alumno sin hilo aún). */
+  sidebarListEmpty,
 }) {
   const isMobile = useMediaQuery('(max-width: 991px)');
   const [mobileStage, setMobileStage] = useState('list');
@@ -87,6 +89,11 @@ export default function MessagingShell({
   const conversations = useMemo(
     () => (rawConversations || []).map((c) => enrichConversation(c, variant, viewerRole)),
     [rawConversations, variant, viewerRole]
+  );
+
+  const sidebarConversations = useMemo(
+    () => conversations.filter((c) => !c.hideFromList),
+    [conversations]
   );
 
   const filterTabs = useMemo(() => buildFilterTabs(variant, viewerRole), [variant, viewerRole]);
@@ -132,12 +139,6 @@ export default function MessagingShell({
     }
   }, [isMobile]);
 
-  useEffect(() => {
-    if (isMobile && selectedKey && mobileStage === 'list') {
-      /* keep list on first paint if user navigated without tap */
-    }
-  }, [isMobile, selectedKey, mobileStage]);
-
   const otherLabel = nameOf(activeConv?.otherParticipant, variant === 'admin-coach' ? 'Contacto' : 'Contacto');
 
   const pendingHighlight =
@@ -173,7 +174,8 @@ export default function MessagingShell({
 
   const sidebarHeader = sidebarTitle || (variant === 'admin-coach' ? 'Consultas' : 'Mensajes');
 
-  const hideFilters = viewerRole === 'cliente' && variant === 'coach-client' && conversations.length <= 1;
+  const hideFilters =
+    viewerRole === 'cliente' && variant === 'coach-client' && sidebarConversations.length <= 1;
 
   return (
     <div className={`messaging-app ${embedded ? 'messaging-app--embedded' : ''}`}>
@@ -189,22 +191,32 @@ export default function MessagingShell({
         {hideFilters ? (
           <div className="messaging-sidebar-inner messaging-sidebar-inner--simple">
             <div className="messaging-conv-list">
-              {conversations.map((conv) => (
-                <ConversationItem
-                  key={conv.key}
-                  conv={conv}
-                  selected={selectedKey === conv.key}
-                  unread={getUnread(conv)}
-                  contextLabel={showContextMeta ? contextLabelStr : null}
-                  otherRoleLabel={getOtherRoleLabel(conv)}
-                  onSelect={handleSelect}
-                />
-              ))}
+              {loading && sidebarConversations.length === 0 ? (
+                <div className="messaging-skeleton-list" aria-busy="true">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="messaging-skeleton-item" />
+                  ))}
+                </div>
+              ) : sidebarConversations.length === 0 ? (
+                sidebarListEmpty || <EmptyInboxFirst />
+              ) : (
+                sidebarConversations.map((conv) => (
+                  <ConversationItem
+                    key={conv.key}
+                    conv={conv}
+                    selected={selectedKey === conv.key}
+                    unread={getUnread(conv)}
+                    contextLabel={showContextMeta ? contextLabelStr : null}
+                    otherRoleLabel={getOtherRoleLabel(conv)}
+                    onSelect={handleSelect}
+                  />
+                ))
+              )}
             </div>
           </div>
         ) : (
           <ConversationList
-            conversations={conversations}
+            conversations={sidebarConversations}
             selectedKey={selectedKey}
             onSelectConversation={handleSelect}
             loading={loading}

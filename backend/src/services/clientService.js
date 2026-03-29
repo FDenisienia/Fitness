@@ -1,19 +1,85 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../utils/prisma.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
+import * as userDeletionService from './userDeletionService.js';
 
 const SALT_ROUNDS = 10;
 
-export async function listClientsByCoach(coachId) {
+function parseExpandList(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map((s) => String(s).trim()).filter(Boolean);
+  return String(raw)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * @param {string} coachId
+ * @param {{ expand?: string[] }} [options] — expand: assignments (clientRoutines + rutina resumida), plannedWorkouts (calendario sin N+1 HTTP)
+ */
+export async function listClientsByCoach(coachId, options = {}) {
+  const expandSet = new Set(parseExpandList(options.expand));
+
+  const include = {
+    user: { select: { id: true, email: true, name: true, lastName: true, status: true, lastPasswordPlain: true } },
+    coach: { include: { user: { select: { id: true } } } },
+  };
+
+  if (expandSet.has('assignments')) {
+    include.clientRoutines = {
+      orderBy: { assignedAt: 'desc' },
+      include: {
+        routine: {
+          select: { id: true, name: true, objective: true, level: true },
+        },
+      },
+    };
+  }
+  if (expandSet.has('plannedWorkouts')) {
+    include.plannedWorkouts = {
+      orderBy: { date: 'desc' },
+      include: {
+        routine: { select: { id: true, name: true } },
+      },
+    };
+  }
+
   const clients = await prisma.client.findMany({
     where: { coachId },
-    include: {
-      user: { select: { id: true, email: true, name: true, lastName: true, status: true, lastPasswordPlain: true } },
-      coach: { include: { user: { select: { id: true } } } },
-    },
+    include,
     orderBy: { createdAt: 'desc' },
   });
-  return clients.map(formatClient);
+  return clients.map((c) => {
+    const base = formatClient(c);
+    if (expandSet.has('assignments')) {
+      base.clientRoutines = (c.clientRoutines || []).map((a) => ({
+        id: a.id,
+        clientId: a.clientId,
+        routineId: a.routineId,
+        assignedAt: a.assignedAt,
+        active: a.active,
+        routine: a.routine,
+      }));
+    }
+    if (expandSet.has('plannedWorkouts')) {
+      base.plannedWorkouts = (c.plannedWorkouts || []).map((w) => ({
+        id: w.id,
+        clientId: w.clientId,
+        routineId: w.routineId,
+        date: w.date,
+        notes: w.notes,
+        completed: w.completed,
+        completedAt: w.completedAt,
+        rpe: w.rpe,
+        sensations: w.sensations,
+        feedback: w.feedback,
+        clientNotes: w.clientNotes,
+        routine: w.routine,
+      }));
+    }
+    return base;
+  });
 }
 
 export async function getClientById(id, coachId = null) {
@@ -123,11 +189,8 @@ export async function updateClient(id, coachId, data) {
   return formatClient(await prisma.client.findUnique({ where: { id }, include: { user: true, coach: { include: { user: { select: { id: true } } } } } }));
 }
 
-export async function deleteClient(id, coachId) {
-  await getClientById(id, coachId);
-  const client = await prisma.client.findUnique({ where: { id }, include: { user: true } });
-  await prisma.user.update({ where: { id: client.userId }, data: { status: 'inactive' } });
-  return { success: true };
+export async function deleteClient(clientProfileId, actor) {
+  return userDeletionService.deleteClientByProfileId(actor, clientProfileId);
 }
 
 function formatClient(c) {

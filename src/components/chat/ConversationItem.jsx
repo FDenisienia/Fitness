@@ -47,7 +47,9 @@ export default function ConversationItem({
             <span className="messaging-chip messaging-chip--ctx">{contextLabel}</span>
           ) : null}
         </div>
-        <p className="messaging-conv-preview">{conv.lastMessagePreview || 'Sin mensajes'}</p>
+        {conv.lastMessagePreview ? (
+          <p className="messaging-conv-preview">{conv.lastMessagePreview}</p>
+        ) : null}
       </div>
       {unread > 0 && (
         <span className="messaging-conv-unread" aria-label={`${unread} sin leer`}>
