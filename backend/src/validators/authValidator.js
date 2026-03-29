@@ -5,6 +5,15 @@ export const loginValidator = [
   body('password').notEmpty().withMessage('Contraseña requerida'),
 ];
 
+/** Reglas fuertes (mayúscula + número) en `assertPasswordPolicy` tras 404/403. Aquí solo tipo. */
+export const patchPasswordValidator = [
+  body('password')
+    .exists({ checkFalsy: true })
+    .withMessage('Contraseña requerida')
+    .isString()
+    .withMessage('Contraseña inválida'),
+];
+
 export const registerValidator = [
   body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
   body('password')

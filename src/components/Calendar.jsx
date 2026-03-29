@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, Badge, Modal, Button, Form } from 'react-bootstrap';
+import { clientDisplayName, getInitials, clientDisplay } from '../utils/clientDisplay';
 
 const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -60,7 +61,21 @@ function parseDateLocal(dateStr) {
   return new Date(y, m - 1, d);
 }
 
-export default function Calendar({ plannedWorkouts = [], routines = [], onSelectDay, onWorkoutClick, onWorkoutComplete, onMarkComplete, mode = 'view', allowMarkComplete = false }) {
+const levelLabel = (l) => ({ principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado' }[l] || l);
+
+export default function Calendar({
+  plannedWorkouts = [],
+  routines = [],
+  clients,
+  onSelectDay,
+  onWorkoutClick,
+  onWorkoutComplete,
+  onMarkComplete,
+  onDeleteWorkout,
+  onRescheduleWorkout,
+  mode = 'view',
+  allowMarkComplete = false,
+}) {
   const today = new Date();
   const [viewDate, setViewDate] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [selectedDate, setSelectedDate] = useState(null);
@@ -68,6 +83,10 @@ export default function Calendar({ plannedWorkouts = [], routines = [], onSelect
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [workoutToComplete, setWorkoutToComplete] = useState(null);
   const [completeForm, setCompleteForm] = useState({ rpe: 5, feedback: '' });
+  const [rescheduleId, setRescheduleId] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  /** Coach modal: fila alumno desplegada → muestra rutina y acciones (por planned workout id) */
+  const [alumnoDetailOpen, setAlumnoDetailOpen] = useState({});
 
   const year = viewDate.year;
   const month = viewDate.month;
@@ -108,6 +127,14 @@ export default function Calendar({ plannedWorkouts = [], routines = [], onSelect
   };
 
   const dayWorkouts = selectedDate ? (workoutsByDate[selectedDate] || []) : [];
+
+  const coachDayModal = clients !== undefined;
+  const clientById = useMemo(() => {
+    if (!clients?.length) return {};
+    return Object.fromEntries(clients.map((c) => [c.id, c]));
+  }, [clients]);
+
+  const getClient = (clientId) => clientById[clientId] || null;
 
   const handleMarkComplete = (pw, e) => {
     e?.stopPropagation?.();
@@ -188,42 +215,285 @@ export default function Calendar({ plannedWorkouts = [], routines = [], onSelect
         </Card.Body>
       </Card>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {selectedDate && parseDateLocal(selectedDate).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </Modal.Title>
+      <Modal
+        show={showModal}
+        onHide={() => {
+          setShowModal(false);
+          setRescheduleId(null);
+          setAlumnoDetailOpen({});
+        }}
+        centered
+        dialogClassName={coachDayModal ? 'coach-calendar-day-dialog' : undefined}
+        contentClassName={coachDayModal ? 'coach-calendar-day-content' : undefined}
+        className={coachDayModal ? 'coach-calendar-day-modal' : undefined}
+      >
+        <Modal.Header closeButton className={coachDayModal ? 'coach-calendar-day-header' : undefined}>
+          <div className="w-100">
+            <Modal.Title as="div" className={coachDayModal ? 'coach-calendar-day-title' : undefined}>
+              {selectedDate && parseDateLocal(selectedDate).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </Modal.Title>
+            {coachDayModal && selectedDate && (
+              <p className="coach-calendar-day-subtitle mb-0 mt-1">
+                {dayWorkouts.length === 0
+                  ? 'No hay entrenamientos planificados. Podés agregar uno abajo.'
+                  : (() => {
+                      const nAlumnos = new Set(dayWorkouts.map((w) => w.clientId)).size;
+                      return `${dayWorkouts.length} entrenamiento${dayWorkouts.length !== 1 ? 's' : ''} · ${nAlumnos} alumno${nAlumnos !== 1 ? 's' : ''}`;
+                    })()}
+              </p>
+            )}
+          </div>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className={coachDayModal ? 'coach-calendar-day-body' : undefined}>
           {dayWorkouts.length === 0 ? (
-            <p className="text-muted mb-0">Sin entrenamientos planificados.</p>
+            <p className={coachDayModal ? 'coach-calendar-day-empty mb-0' : 'text-muted mb-0'}>
+              {coachDayModal ? 'Este día está libre. Usá «Añadir entrenamiento» para asignar rutina y alumno.' : 'Sin entrenamientos planificados.'}
+            </p>
+          ) : coachDayModal ? (
+            <div className="d-flex flex-column gap-3">
+              {dayWorkouts.map((pw) => {
+                const routine = routines.find((r) => r.id === pw.routineId);
+                const client = getClient(pw.clientId);
+                const disp = client ? clientDisplay(client) : { name: '', lastName: '' };
+                const initials = getInitials(disp.name, disp.lastName);
+                const alumnoNombre = client ? clientDisplayName(client) : 'Alumno';
+                const alumnoOpen = !!alumnoDetailOpen[pw.id];
+                return (
+                  <div key={pw.id} className="coach-day-entreno">
+                    <div className="coach-day-entreno__client-block">
+                      <div className="coach-day-entreno__client">
+                        <div className="coach-day-entreno__avatar" aria-hidden="true">
+                          {initials}
+                        </div>
+                        <div className="coach-day-entreno__client-topline">
+                          <span className="coach-day-entreno__alumno-name">{alumnoNombre}</span>
+                          <button
+                            type="button"
+                            className="coach-day-entreno__expand"
+                            onClick={() => {
+                              setAlumnoDetailOpen((prev) => {
+                                const wasOpen = !!prev[pw.id];
+                                if (wasOpen) {
+                                  setRescheduleId((rid) => (rid === pw.id ? null : rid));
+                                }
+                                return { ...prev, [pw.id]: !wasOpen };
+                              });
+                            }}
+                            aria-expanded={alumnoOpen}
+                            aria-label={
+                              alumnoOpen
+                                ? 'Ocultar rutina y acciones'
+                                : 'Ver rutina, estado, notas y acciones'
+                            }
+                          >
+                            <span className={`coach-day-entreno__expand-icon ${alumnoOpen ? 'coach-day-entreno__expand-icon--open' : ''}`} aria-hidden="true">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                      {alumnoOpen && (
+                        <div className="coach-day-entreno__client-detail" id={`coach-alumno-detail-${pw.id}`}>
+                          <div className="coach-day-entreno__routine-expanded-head">
+                            <span className="coach-day-entreno__kicker">Rutina</span>
+                            <strong className="coach-day-entreno__routine-name">{routine?.name || 'Rutina'}</strong>
+                          </div>
+                          <div className="coach-day-entreno__badges">
+                            {routine?.objective && (
+                              <span className="coach-day-badge">{routine.objective.charAt(0).toUpperCase() + routine.objective.slice(1)}</span>
+                            )}
+                            {routine?.level && <span className="coach-day-badge">{levelLabel(routine.level)}</span>}
+                            {(routine?.stimulus || routine?.estimulo) && (
+                              <span className="coach-day-badge coach-day-badge--accent">
+                                {(routine.stimulus || routine.estimulo).charAt(0).toUpperCase() + (routine.stimulus || routine.estimulo).slice(1)}
+                              </span>
+                            )}
+                            {routine?.durationMinutes != null && (
+                              <span className="coach-day-badge">~{routine.durationMinutes} min</span>
+                            )}
+                          </div>
+                          {pw.completed ? (
+                            <Badge bg="success" className="mt-2 align-self-start">Completado</Badge>
+                          ) : (
+                            <span className="coach-day-entreno__pendiente mt-1">Pendiente</span>
+                          )}
+
+                          {pw.notes && (
+                            <div className="coach-day-entreno__notes coach-day-entreno__notes--in-routine">
+                              <span className="coach-day-entreno__kicker">Notas</span>
+                              <p className="mb-0">{pw.notes}</p>
+                            </div>
+                          )}
+
+                          {!pw.completed && (
+                            <div className="coach-day-entreno__actions">
+                              {allowMarkComplete && (
+                                <Button variant="success" size="sm" onClick={() => handleMarkComplete(pw)}>
+                                  Marcar completado
+                                </Button>
+                              )}
+                              {typeof onRescheduleWorkout === 'function' && (
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  className="coach-day-btn-outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (rescheduleId === pw.id) {
+                                      setRescheduleId(null);
+                                    } else {
+                                      setRescheduleId(pw.id);
+                                      setRescheduleDate(toDateStr(pw.date));
+                                    }
+                                  }}
+                                >
+                                  {rescheduleId === pw.id ? 'Cancelar' : 'Cambiar fecha'}
+                                </Button>
+                              )}
+                              {typeof onDeleteWorkout === 'function' && (
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteWorkout(pw);
+                                  }}
+                                >
+                                  Quitar del calendario
+                                </Button>
+                              )}
+                              <Button variant="outline-primary" size="sm" className="coach-day-btn-outline" onClick={() => onWorkoutClick?.(pw, routine)}>
+                                Ver rutina
+                              </Button>
+                            </div>
+                          )}
+
+                          {typeof onRescheduleWorkout === 'function' && !pw.completed && rescheduleId === pw.id && (
+                            <div className="coach-day-entreno__reschedule">
+                              <Form.Label className="coach-day-entreno__kicker d-block mb-2">Nueva fecha</Form.Label>
+                              <div className="d-flex flex-wrap gap-2 align-items-center">
+                                <Form.Control
+                                  type="date"
+                                  className="coach-day-date-input"
+                                  value={rescheduleDate}
+                                  onChange={(e) => setRescheduleDate(e.target.value)}
+                                />
+                                <Button
+                                  size="sm"
+                                  className="btn-primary"
+                                  disabled={!rescheduleDate}
+                                  onClick={async () => {
+                                    try {
+                                      await onRescheduleWorkout(pw, rescheduleDate);
+                                      setRescheduleId(null);
+                                      setShowModal(false);
+                                    } catch {
+                                      /* error o validación ya mostrados en el padre */
+                                    }
+                                  }}
+                                >
+                                  Guardar
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="d-flex flex-column gap-2">
-              {dayWorkouts.map(pw => {
-                const routine = routines.find(r => r.id === pw.routineId);
+              {dayWorkouts.map((pw) => {
+                const routine = routines.find((r) => r.id === pw.routineId);
                 return (
                   <Card key={pw.id} className="border-0 bg-light">
-                    <Card.Body className="py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                      <div className="flex-grow-1">
-                        <strong>{routine?.name || 'Rutina'}</strong>
-                        {pw.notes && <div className="small text-muted">{pw.notes}</div>}
-                      </div>
-                      <div className="d-flex gap-2 align-items-center">
-                        {pw.completed ? (
-                          <Badge bg="success">Completado</Badge>
-                        ) : (
-                          <>
-                            {allowMarkComplete && (
-                              <Button variant="success" size="sm" onClick={() => handleMarkComplete(pw)}>
-                                Marcar completado
+                    <Card.Body className="py-3">
+                      <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div className="flex-grow-1">
+                          <strong>{routine?.name || 'Rutina'}</strong>
+                          {pw.notes && <div className="small text-muted">{pw.notes}</div>}
+                        </div>
+                        <div className="d-flex gap-2 align-items-center flex-wrap">
+                          {pw.completed ? (
+                            <Badge bg="success">Completado</Badge>
+                          ) : (
+                            <>
+                              {allowMarkComplete && (
+                                <Button variant="success" size="sm" onClick={() => handleMarkComplete(pw)}>
+                                  Marcar completado
+                                </Button>
+                              )}
+                              {typeof onRescheduleWorkout === 'function' && (
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (rescheduleId === pw.id) {
+                                      setRescheduleId(null);
+                                    } else {
+                                      setRescheduleId(pw.id);
+                                      setRescheduleDate(toDateStr(pw.date));
+                                    }
+                                  }}
+                                >
+                                  {rescheduleId === pw.id ? 'Cancelar' : 'Cambiar fecha'}
+                                </Button>
+                              )}
+                              {typeof onDeleteWorkout === 'function' && (
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteWorkout(pw);
+                                  }}
+                                >
+                                  Quitar del calendario
+                                </Button>
+                              )}
+                              <Button variant="outline-primary" size="sm" onClick={() => onWorkoutClick?.(pw, routine)}>
+                                Ver rutina
                               </Button>
-                            )}
-                            <Button variant="outline-primary" size="sm" onClick={() => onWorkoutClick?.(pw, routine)}>
-                              Ver rutina
-                            </Button>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
+                      {typeof onRescheduleWorkout === 'function' && !pw.completed && rescheduleId === pw.id && (
+                        <div className="mt-3 pt-3 border-top">
+                          <Form.Label className="small text-muted mb-1">Nueva fecha</Form.Label>
+                          <div className="d-flex flex-wrap gap-2 align-items-center">
+                            <Form.Control
+                              type="date"
+                              className="flex-grow-1"
+                              style={{ maxWidth: 200 }}
+                              value={rescheduleDate}
+                              onChange={(e) => setRescheduleDate(e.target.value)}
+                            />
+                            <Button
+                              size="sm"
+                              className="btn-primary"
+                              disabled={!rescheduleDate}
+                              onClick={async () => {
+                                try {
+                                  await onRescheduleWorkout(pw, rescheduleDate);
+                                  setRescheduleId(null);
+                                  setShowModal(false);
+                                } catch {
+                                  /* error o validación ya mostrados en el padre */
+                                }
+                              }}
+                            >
+                              Guardar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </Card.Body>
                   </Card>
                 );
@@ -232,8 +502,18 @@ export default function Calendar({ plannedWorkouts = [], routines = [], onSelect
           )}
         </Modal.Body>
         {mode === 'plan' && onSelectDay && (
-          <Modal.Footer>
-            <Button variant="outline-primary" size="sm" onClick={() => { setShowModal(false); onSelectDay?.(selectedDate, dayWorkouts, true); }}>Añadir entrenamiento</Button>
+          <Modal.Footer className={coachDayModal ? 'coach-calendar-day-footer' : undefined}>
+            <Button
+              className={coachDayModal ? 'coach-calendar-day-footer-btn' : undefined}
+              variant={coachDayModal ? 'primary' : 'outline-primary'}
+              size="sm"
+              onClick={() => {
+                setShowModal(false);
+                onSelectDay?.(selectedDate, dayWorkouts, true);
+              }}
+            >
+              Añadir entrenamiento
+            </Button>
           </Modal.Footer>
         )}
       </Modal>

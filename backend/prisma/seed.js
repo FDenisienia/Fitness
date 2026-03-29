@@ -1,5 +1,7 @@
+import '../src/loadEnv.js';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { seedExerciseCatalog } from './seedExerciseCatalog.js';
 
 const prisma = new PrismaClient();
 const SALT = 10;
@@ -9,10 +11,11 @@ async function main() {
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@fitcoach.com' },
-    update: {},
+    update: { lastPasswordPlain: 'admin123' },
     create: {
       email: 'admin@fitcoach.com',
       passwordHash: hash('admin123'),
+      lastPasswordPlain: 'admin123',
       name: 'Admin',
       lastName: 'Sistema',
       role: 'admin',
@@ -22,15 +25,21 @@ async function main() {
 
   const coachUser = await prisma.user.upsert({
     where: { email: 'coach@fitcoach.com' },
-    update: {},
+    update: { lastPasswordPlain: 'coach123' },
     create: {
       email: 'coach@fitcoach.com',
       passwordHash: hash('coach123'),
+      lastPasswordPlain: 'coach123',
       name: 'Carlos',
       lastName: 'González',
       role: 'coach',
       status: 'active',
     },
+  });
+
+  await prisma.user.update({
+    where: { id: coachUser.id },
+    data: { createdById: adminUser.id },
   });
 
   const coach = await prisma.coach.upsert({
@@ -46,10 +55,11 @@ async function main() {
 
   const client1User = await prisma.user.upsert({
     where: { email: 'cliente1@email.com' },
-    update: {},
+    update: { lastPasswordPlain: 'cliente123' },
     create: {
       email: 'cliente1@email.com',
       passwordHash: hash('cliente123'),
+      lastPasswordPlain: 'cliente123',
       name: 'Juan',
       lastName: 'Pérez',
       role: 'cliente',
@@ -59,10 +69,11 @@ async function main() {
 
   const client2User = await prisma.user.upsert({
     where: { email: 'cliente2@email.com' },
-    update: {},
+    update: { lastPasswordPlain: 'cliente123' },
     create: {
       email: 'cliente2@email.com',
       passwordHash: hash('cliente123'),
+      lastPasswordPlain: 'cliente123',
       name: 'Ana',
       lastName: 'Martínez',
       role: 'cliente',
@@ -94,22 +105,20 @@ async function main() {
     },
   });
 
-  const ex1 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Sentadilla Back' } })
-    || await prisma.exerciseLibrary.create({
-      data: { name: 'Sentadilla Back', description: 'Sentadilla con barra alta', instructions: 'Mantén espalda recta, baja hasta muslos paralelos.', muscleGroup: 'Piernas', equipment: 'Barra', caloriasPorRep: 0.5, videoUrl: 'https://www.youtube.com/embed/aclHkVaku9U', scope: 'global' },
-    });
-  const ex2 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Press de banca' } })
-    || await prisma.exerciseLibrary.create({
-      data: { name: 'Press de banca', description: 'Press plano con barra', instructions: 'Descender controlado hasta el pecho.', muscleGroup: 'Pecho', equipment: 'Barra', caloriasPorRep: 0.4, videoUrl: 'https://www.youtube.com/embed/rT7DgCr-3pg', scope: 'global' },
-    });
-  const ex3 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Peso muerto rumano' } })
-    || await prisma.exerciseLibrary.create({
-      data: { name: 'Peso muerto rumano', description: 'RDL isquiotibiales', instructions: 'Piernas casi rectas, inclínate con la barra.', muscleGroup: 'Isquiotibiales', equipment: 'Barra', caloriasPorRep: 0.35, videoUrl: 'https://www.youtube.com/embed/JCXUYuzwNrM', scope: 'global' },
-    });
-  const ex4 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Flexiones' } })
-    || await prisma.exerciseLibrary.create({
-      data: { name: 'Flexiones', description: 'Push-ups clásicas', instructions: 'Core activo, baja pecho al suelo.', muscleGroup: 'Pecho', equipment: 'Peso corporal', caloriasPorRep: 0.4, videoUrl: 'https://www.youtube.com/embed/IODxDxX7oi4', scope: 'global' },
-    });
+  await prisma.user.updateMany({
+    where: { id: { in: [client1User.id, client2User.id] } },
+    data: { assignedCoachId: coach.id },
+  });
+
+  await seedExerciseCatalog(prisma);
+
+  const ex1 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Sentadilla trasera con barra', scope: 'global' } });
+  const ex2 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Press de banca con barra', scope: 'global' } });
+  const ex3 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Peso muerto rumano con barra', scope: 'global' } });
+  const ex4 = await prisma.exerciseLibrary.findFirst({ where: { name: 'Flexiones', scope: 'global' } });
+  if (!ex1 || !ex2 || !ex3 || !ex4) {
+    throw new Error('Seed: faltan ejercicios base del catálogo (sentadilla, press plano, RDL, flexiones).');
+  }
 
   let routine1 = await prisma.routine.findFirst({ where: { name: 'Fuerza Base', coachId: coach.id } });
   if (!routine1) routine1 = await prisma.routine.create({

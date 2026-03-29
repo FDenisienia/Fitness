@@ -8,7 +8,7 @@ export async function listClientsByCoach(coachId) {
   const clients = await prisma.client.findMany({
     where: { coachId },
     include: {
-      user: { select: { id: true, email: true, name: true, lastName: true, status: true } },
+      user: { select: { id: true, email: true, name: true, lastName: true, status: true, lastPasswordPlain: true } },
       coach: { include: { user: { select: { id: true } } } },
     },
     orderBy: { createdAt: 'desc' },
@@ -37,15 +37,18 @@ export async function createClient(coachId, data) {
   });
   if (existing) throw new BadRequestError('Ya existe un usuario con ese email');
 
-  const passwordHash = await bcrypt.hash(data.password || 'cliente123', 10);
+  const plain = (data.password && String(data.password).trim()) || 'cliente123';
+  const passwordHash = await bcrypt.hash(plain, 10);
   const user = await prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
       passwordHash,
+      lastPasswordPlain: plain,
       name: data.name,
       lastName: data.lastName || null,
       role: 'cliente',
       status: 'active',
+      assignedCoachId: coachId,
     },
   });
   const client = await prisma.client.create({
@@ -56,6 +59,8 @@ export async function createClient(coachId, data) {
       weight: data.weight ? parseFloat(data.weight) : null,
       height: data.height ? parseFloat(data.height) : null,
       objective: data.objective || null,
+      objectiveDescription:
+        data.objective === 'personalizado' ? (data.objectiveDescription?.trim() || null) : null,
       level: data.level || null,
     },
     include: { user: true },
@@ -68,23 +73,51 @@ export async function updateClient(id, coachId, data) {
   if (coachId && coachId !== 'self') await getClientById(id, coachId);
   const client = await prisma.client.findUnique({ where: { id }, include: { user: true } });
   if (!client) throw new NotFoundError('Cliente');
-  await prisma.client.update({
-    where: { id },
-    data: {
-      age: data.age !== undefined ? (data.age ? parseInt(data.age, 10) : null) : undefined,
-      weight: data.weight !== undefined ? (data.weight ? parseFloat(data.weight) : null) : undefined,
-      height: data.height !== undefined ? (data.height ? parseFloat(data.height) : null) : undefined,
-      objective: data.objective !== undefined ? data.objective : undefined,
-      level: data.level !== undefined ? data.level : undefined,
-    },
-  });
-  if (data.name !== undefined || data.lastName !== undefined) {
+  const nextObjective = data.objective !== undefined ? data.objective : client.objective;
+  let objectiveDescriptionPatch;
+  if (nextObjective !== 'personalizado') {
+    objectiveDescriptionPatch = null;
+  } else if (data.objectiveDescription !== undefined) {
+    objectiveDescriptionPatch = data.objectiveDescription?.trim() || null;
+  } else {
+    objectiveDescriptionPatch = undefined;
+  }
+
+  /** Prisma no acepta `undefined` en data: hay que omitir la clave. */
+  const clientData = {};
+  if (data.age !== undefined) clientData.age = data.age ? parseInt(data.age, 10) : null;
+  if (data.weight !== undefined) clientData.weight = data.weight ? parseFloat(data.weight) : null;
+  if (data.height !== undefined) clientData.height = data.height ? parseFloat(data.height) : null;
+  if (data.objective !== undefined) clientData.objective = data.objective;
+  if (data.level !== undefined) clientData.level = data.level;
+  if (objectiveDescriptionPatch !== undefined) {
+    clientData.objectiveDescription = objectiveDescriptionPatch;
+  }
+
+  if (Object.keys(clientData).length > 0) {
+    await prisma.client.update({
+      where: { id },
+      data: clientData,
+    });
+  }
+
+  const userData = {};
+  if (data.name !== undefined) userData.name = data.name;
+  if (data.lastName !== undefined) userData.lastName = data.lastName;
+  if (data.email !== undefined) {
+    const nextEmail = String(data.email).toLowerCase().trim();
+    if (nextEmail !== client.user.email) {
+      const taken = await prisma.user.findFirst({
+        where: { email: nextEmail, id: { not: client.userId } },
+      });
+      if (taken) throw new BadRequestError('Ya existe un usuario con ese email');
+    }
+    userData.email = nextEmail;
+  }
+  if (Object.keys(userData).length > 0) {
     await prisma.user.update({
       where: { id: client.userId },
-      data: {
-        name: data.name !== undefined ? data.name : undefined,
-        lastName: data.lastName !== undefined ? data.lastName : undefined,
-      },
+      data: userData,
     });
   }
   return formatClient(await prisma.client.findUnique({ where: { id }, include: { user: true, coach: { include: { user: { select: { id: true } } } } } }));
@@ -108,6 +141,7 @@ function formatClient(c) {
     weight: c.weight,
     height: c.height,
     objective: c.objective,
+    objectiveDescription: c.objectiveDescription,
     level: c.level,
     createdAt: c.createdAt,
     user: c.user ? {
@@ -116,6 +150,7 @@ function formatClient(c) {
       name: c.user.name,
       lastName: c.user.lastName,
       status: c.user.status,
+      lastPasswordPlain: c.user.lastPasswordPlain ?? null,
     } : undefined,
     coach: c.coach,
   };

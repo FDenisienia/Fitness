@@ -5,4 +5,7 @@ export const coachesApi = {
   getById: (id) => api.get(`/coaches/${id}`),
   create: (data) => api.post('/coaches', data),
   update: (id, data) => api.put(`/coaches/${id}`, data),
+  deactivate: (id) => api.post(`/coaches/${id}/deactivate`, {}),
+  activate: (id) => api.post(`/coaches/${id}/activate`, {}),
+  remove: (id) => api.delete(`/coaches/${id}`),
 };

@@ -15,8 +15,16 @@ export const ROUTINE_STATUS = ['borrador', 'activa', 'archivada'];
 
 export const STIMULUS_TYPES = ['fuerza', 'resistencia', 'quema de grasa', 'mixto'];
 
-export const MUSCLE_GROUPS = ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Piernas', 'Isquiotibiales', 'Glúteos', 'Core', 'Cardio'];
-export const EQUIPMENT = ['Barra', 'Mancuernas', 'Kettlebell', 'Máquina', 'Peso corporal', 'Bandas', 'TRX', 'Otro'];
+export const MUSCLE_GROUPS = [
+  'Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps',
+  'Cuádriceps', 'Isquiotibiales', 'Glúteos', 'Pantorrillas', 'Piernas',
+  'Abdominales', 'Lumbares', 'Core',
+  'Cardio', 'HIIT', 'Movilidad', 'Deportes',
+];
+export const EQUIPMENT = [
+  'Barra', 'Mancuernas', 'Kettlebell', 'Máquina', 'Peso corporal',
+  'Bandas', 'TRX', 'Cuerda', 'Bicicleta', 'Otro',
+];
 
 // === FEATURE GATING: componentes reales y flags por plan ===
 // Módulos: Dashboard | Calendario | Alumnos | Seguimiento peso | Rutinas | Biblioteca | Consultas

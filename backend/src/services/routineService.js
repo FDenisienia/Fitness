@@ -120,13 +120,17 @@ async function upsertRoutineExercises(routineId, exercises) {
         caloriasPorMin: ex.caloriasPorMin ? parseFloat(ex.caloriasPorMin) : null,
         videoUrl: ex.videoUrl || null,
         orderIndex: ex.order ?? i,
+        sessionIndex:
+          ex.sessionIndex != null && ex.sessionIndex !== ''
+            ? Math.max(1, parseInt(String(ex.sessionIndex), 10) || 1)
+            : 1,
         notes: ex.observations || ex.notes || null,
       },
     });
   }
 }
 
-function formatRoutine(r) {
+export function formatRoutine(r) {
   return {
     id: r.id,
     coachId: r.coachId,
@@ -157,7 +161,9 @@ function formatRoutine(r) {
       caloriasPorRep: re.caloriasPorRep,
       caloriasPorMin: re.caloriasPorMin,
       videoUrl: re.videoUrl || re.exercise?.videoUrl,
+      muscleGroup: re.exercise?.muscleGroup || null,
       order: re.orderIndex,
+      sessionIndex: re.sessionIndex ?? 1,
       observations: re.notes,
     })),
   };

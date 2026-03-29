@@ -14,6 +14,7 @@ const getEmptyExercise = () => ({
   reps: '10',
   rest: '60 seg',
   order: 1,
+  sessionIndex: 1,
   videoUrl: '',
   exerciseId: null,
 });
@@ -39,6 +40,7 @@ export default function CoachRoutinesPage() {
   const [showAssign, setShowAssign] = useState(!!assignClientId);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
   const [assignClient, setAssignClient] = useState(assignClientId || '');
+  const [assignDate, setAssignDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const loadData = async () => {
     setLoading(true);
@@ -88,6 +90,7 @@ export default function CoachRoutinesPage() {
           id: ex.id || `ex-${Date.now()}`,
           exerciseId: ex.exerciseId || null,
           name: ex.name || ex.customName || '',
+          sessionIndex: ex.sessionIndex ?? 1,
         }))
         : [getEmptyExercise()];
       setForm({ ...routine, exercises: exs }); // estimulo -> stimulus
@@ -109,6 +112,10 @@ export default function CoachRoutinesPage() {
     rest: ex.rest || null,
     videoUrl: ex.videoUrl || null,
     order: i,
+    sessionIndex:
+      ex.sessionIndex != null && ex.sessionIndex !== ''
+        ? Math.max(1, parseInt(String(ex.sessionIndex), 10) || 1)
+        : 1,
   });
 
   const handleSave = async () => {
@@ -158,6 +165,7 @@ export default function CoachRoutinesPage() {
           rest: ex.rest,
           videoUrl: ex.videoUrl,
           order: i,
+          sessionIndex: ex.sessionIndex ?? 1,
         })),
       });
       loadData();
@@ -184,6 +192,7 @@ export default function CoachRoutinesPage() {
   const openAssign = (r) => {
     setSelectedRoutine(r);
     setAssignClient(assignClientId || '');
+    setAssignDate(new Date().toISOString().slice(0, 10));
     setShowAssign(true);
   };
 
@@ -194,9 +203,13 @@ export default function CoachRoutinesPage() {
       alert('Este cliente ya tiene asignada esta rutina');
       return;
     }
+    if (!assignDate) {
+      alert('Elige la fecha de asignación');
+      return;
+    }
     setSaving(true);
     try {
-      await clientRoutinesApi.assign(assignClient, selectedRoutine.id);
+      await clientRoutinesApi.assign(assignClient, selectedRoutine.id, assignDate);
       setShowAssign(false);
       loadData();
     } catch (err) {
@@ -280,7 +293,7 @@ export default function CoachRoutinesPage() {
             <div className="form-section-title">Ejercicios</div>
             <p className="small text-muted mb-3">Busca en la biblioteca o escribe el nombre manualmente</p>
             <div className="exercise-row-header">
-              <span>Ejercicio</span><span>Series</span><span>Reps</span><span>Descanso</span><span>URL video</span><span></span>
+              <span>Ejercicio</span><span>Bloque</span><span>Series</span><span>Reps</span><span>Descanso</span><span>URL video</span><span></span>
             </div>
             {form.exercises?.map((ex, i) => (
               <div key={ex.id} className="exercise-row-card">
@@ -309,6 +322,20 @@ export default function CoachRoutinesPage() {
                         }));
                       }}
                     />
+                  </div>
+                  <div>
+                    <Form.Label className="d-md-none small">Bloque</Form.Label>
+                    <Form.Select
+                      value={String(ex.sessionIndex ?? 1)}
+                      onChange={e => setForm(f => ({
+                        ...f,
+                        exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, sessionIndex: parseInt(e.target.value, 10) || 1 } : ee),
+                      }))}
+                    >
+                      {Array.from({ length: 12 }, (_, n) => n + 1).map((num) => (
+                        <option key={num} value={num}>Bloque {num}</option>
+                      ))}
+                    </Form.Select>
                   </div>
                   <div>
                     <Form.Label className="d-md-none small">Series</Form.Label>
@@ -348,6 +375,17 @@ export default function CoachRoutinesPage() {
       <Modal show={showAssign} onHide={() => setShowAssign(false)} size="lg">
         <Modal.Header closeButton><Modal.Title>Asignar rutina a cliente</Modal.Title></Modal.Header>
         <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Fecha de asignación</Form.Label>
+            <Form.Control
+              type="date"
+              value={assignDate}
+              onChange={e => setAssignDate(e.target.value)}
+            />
+            <Form.Text className="text-muted">
+              El entrenamiento quedará planificado en el calendario para este día.
+            </Form.Text>
+          </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Cliente</Form.Label>
             <Form.Select value={assignClient} onChange={e => setAssignClient(e.target.value)}>

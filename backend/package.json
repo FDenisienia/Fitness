@@ -8,7 +8,13 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
-    "db:studio": "prisma studio"
+    "db:seed:catalog": "node prisma/seedCatalogOnly.js",
+    "db:seed:catalog:dev": "dotenv -e .env.local -- node prisma/seedCatalogOnly.js",
+    "db:studio": "prisma studio",
+    "db:push:dev": "dotenv -e .env.local -- prisma db push",
+    "db:seed:dev": "dotenv -e .env.local -- node prisma/seed.js",
+    "db:studio:dev": "dotenv -e .env.local -- prisma studio",
+    "db:migrate:dev": "dotenv -e .env.local -- prisma migrate deploy"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -23,5 +29,8 @@
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.0.0"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0"
   }
 }

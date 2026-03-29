@@ -5,4 +5,5 @@ export const plannedWorkoutsApi = {
     api.get(`/planned-workouts/client/${clientId}` + (params ? '?' + new URLSearchParams(params).toString() : '')),
   create: (clientId, data) => api.post(`/planned-workouts/client/${clientId}`, data),
   update: (id, data) => api.put(`/planned-workouts/${id}`, data),
+  remove: (id) => api.delete(`/planned-workouts/${id}`),
 };

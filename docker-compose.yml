@@ -1,0 +1,20 @@
+# MySQL local para desarrollo (Athlento / backend Prisma)
+# Uso: desde la raíz del repo → docker compose up -d
+# Luego en backend: npm run db:push && npm run db:seed
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: athlento-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: devpassword
+      MYSQL_DATABASE: athlento
+    ports:
+      - "3306:3306"
+    volumes:
+      - athlento_mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  athlento_mysql_data:

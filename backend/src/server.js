@@ -1,8 +1,7 @@
-import 'dotenv/config';
+import { config } from './config/index.js';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { config } from './config/index.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
@@ -25,12 +24,18 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { success: false, error: 'Demasiadas peticiones' },
-});
-app.use('/api', limiter);
+// Limitación solo en producción (Railway suele tener NODE_ENV=production).
+// En local evita 429 en login y muchas peticiones al cargar la app.
+if (process.env.NODE_ENV === 'production') {
+  app.use(
+    '/api',
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+      message: { success: false, error: 'Demasiadas peticiones' },
+    })
+  );
+}
 
 app.use('/api', routes);
 

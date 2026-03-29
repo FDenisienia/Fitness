@@ -127,6 +127,12 @@ export default function ClientDashboard() {
           <Card.Body className="py-3 px-4">
             <h5 className="mb-2 text-uppercase small fw-semibold text-muted" style={{ letterSpacing: '0.5px' }}>Objetivo</h5>
             <p className="mb-0 objective-label">{getObjectiveLabel(user.objective)}</p>
+            {user.objective === 'personalizado' && user.objectiveDescription?.trim() && (
+              <div className="client-dashboard-objective-desc mt-3 pt-3 border-top border-secondary border-opacity-25">
+                <span className="client-dashboard-objective-desc__label d-block mb-2">Descripción del objetivo</span>
+                <p className="mb-0 objective-desc-body" style={{ whiteSpace: 'pre-wrap' }}>{user.objectiveDescription}</p>
+              </div>
+            )}
           </Card.Body>
         </Card>
       )}

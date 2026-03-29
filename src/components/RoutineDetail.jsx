@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
-import { jsPDF } from 'jspdf';
+import { Badge, Button, Form, Modal } from 'react-bootstrap';
+import { downloadRoutinePdf } from '../utils/routinePdfExport';
 import { useAuth } from '../context/AuthContext';
 import { plannedWorkoutsApi } from '../api';
 import { calcRoutineCalories } from '../utils/routineCalories';
@@ -87,134 +87,104 @@ const IconChevronDown = () => (
   </svg>
 );
 
-// Distribuye ejercicios en bloques por día según daysCount
-function distributeExercisesByDays(exercises, daysCount) {
-  if (!exercises?.length || !daysCount || daysCount < 1) return [{ day: 1, exercises }];
-  const sorted = [...exercises].sort((a, b) => (a.order || 0) - (b.order || 0));
-  const perDay = Math.ceil(sorted.length / daysCount);
-  const result = [];
-  for (let d = 0; d < daysCount; d++) {
-    const start = d * perDay;
-    const dayExercises = sorted.slice(start, start + perDay);
-    if (dayExercises.length > 0) {
-      result.push({ day: d + 1, exercises: dayExercises });
-    }
+// Agrupa ejercicios por bloque (sessionIndex). Por defecto bloque 1 → varios ejercicios en el mismo bloque.
+function groupExercisesBySession(exercises) {
+  const sorted = [...(exercises || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+  if (!sorted.length) return [{ day: 1, exercises: [] }];
+  const map = new Map();
+  for (const ex of sorted) {
+    const s = Math.max(1, ex.sessionIndex ?? ex.session ?? 1);
+    if (!map.has(s)) map.set(s, []);
+    map.get(s).push(ex);
   }
-  return result.length ? result : [{ day: 1, exercises: sorted }];
+  const keys = [...map.keys()].sort((a, b) => a - b);
+  return keys.map((k) => ({ day: k, exercises: map.get(k) }));
 }
 
 const getLevelLabel = (l) => ({ principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado' }[l] || l);
 
-export default function RoutineDetail({ routine, clientName = null, showPdfButton = false, plannedWorkout = null, coachName = null }) {
+function formatPlanDateLabel(isoDate) {
+  if (!isoDate) return '';
+  const d = new Date(typeof isoDate === 'string' ? isoDate.slice(0, 10) : isoDate);
+  if (Number.isNaN(d.getTime())) return String(isoDate).slice(0, 10);
+  return d.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+export default function RoutineDetail({
+  routine,
+  clientName = null,
+  showPdfButton = false,
+  plannedWorkout = null,
+  plannedWorkoutsForRoutine = [],
+  onPlannedWorkoutUpdated,
+  coachName = null,
+}) {
   const { user } = useAuth();
   const displayClientName = clientName || (user?.role === 'cliente' ? `${user?.name} ${user?.lastName}` : null);
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completeForm, setCompleteForm] = useState({ rpe: 5, sensations: '', feedback: '' });
   const [markedComplete, setMarkedComplete] = useState(false);
-  const [expandedSession, setExpandedSession] = useState(1);
+  /** Cuando no hay ?date= en la URL, el usuario elige qué día planificado completar */
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
+  /** null = todos los bloques plegados */
+  const [expandedSession, setExpandedSession] = useState(null);
+  /** por ejercicio: si el vídeo está desplegado */
+  const [videoOpenByKey, setVideoOpenByKey] = useState({});
 
   useEffect(() => {
-    setExpandedSession(1);
+    setExpandedSession(null);
+    setVideoOpenByKey({});
+    setMarkedComplete(false);
   }, [routine?.id]);
 
+  useEffect(() => {
+    if (plannedWorkout?.id) {
+      setSelectedPlanId(plannedWorkout.id);
+      return;
+    }
+    if (!plannedWorkoutsForRoutine?.length) {
+      setSelectedPlanId(null);
+      return;
+    }
+    const firstOpen = plannedWorkoutsForRoutine.find((p) => !p.completed);
+    setSelectedPlanId((firstOpen || plannedWorkoutsForRoutine[0]).id);
+  }, [routine?.id, plannedWorkout?.id, plannedWorkoutsForRoutine]);
+
+  const effectivePlannedWorkout = useMemo(() => {
+    if (plannedWorkout?.id) return plannedWorkout;
+    if (!selectedPlanId || !plannedWorkoutsForRoutine?.length) return null;
+    return plannedWorkoutsForRoutine.find((p) => p.id === selectedPlanId) || null;
+  }, [plannedWorkout, selectedPlanId, plannedWorkoutsForRoutine]);
+
   const exercises = (routine?.exercises || []).sort((a, b) => (a.order || 0) - (b.order || 0));
-  const dayBlocks = useMemo(() => distributeExercisesByDays(exercises, routine?.daysCount || 1), [exercises, routine?.daysCount]);
+  const dayBlocks = useMemo(() => groupExercisesBySession(exercises), [exercises]);
   const { total: totalKcal, byExercise } = calcRoutineCalories(routine, []);
 
   const downloadPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
-
-    doc.setFontSize(18);
-    doc.text('Rutina de entrenamiento', pageWidth / 2, y, { align: 'center' });
-    y += 15;
-
-    doc.setFontSize(12);
-    if (displayClientName) {
-      doc.text(`Cliente: ${displayClientName}`, 20, y);
-      y += 8;
-    }
-    if (coachName) {
-      doc.text(`Coach: ${coachName}`, 20, y);
-      y += 8;
-    }
-
-    doc.setFontSize(14);
-    doc.text(routine.name, 20, y);
-    y += 10;
-
-    doc.setFontSize(10);
-    doc.text(`Objetivo: ${routine.objective} | Nivel: ${routine.level}`, 20, y);
-    y += 6;
-    doc.text(`Duración: ~${routine.durationMinutes} min`, 20, y);
-    y += 12;
-
-    if (routine.description) {
-      doc.text('Descripción:', 20, y);
-      y += 6;
-      const splitDesc = doc.splitTextToSize(routine.description, pageWidth - 40);
-      doc.text(splitDesc, 20, y);
-      y += splitDesc.length * 5 + 8;
-    }
-
-    doc.setFontSize(12);
-    doc.text('Ejercicios', 20, y);
-    y += 10;
-
-    exercises.forEach((ex, i) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text(`${i + 1}. ${ex.name}`, 20, y);
-      y += 6;
-      doc.setFont(undefined, 'normal');
-      doc.text(`  Series: ${ex.sets} | Reps: ${ex.reps || '-'} | Descanso: ${ex.rest || '-'}`, 20, y);
-      y += 6;
-      if (ex.observations) {
-        doc.text(`  Obs: ${ex.observations}`, 20, y);
-        y += 6;
-      }
-      y += 4;
+    downloadRoutinePdf({
+      routine,
+      displayClientName,
+      coachName,
+    }).catch((err) => {
+      console.error(err);
+      alert(err?.message || 'No se pudo generar el PDF. Intentá de nuevo.');
     });
-
-    y += 8;
-    if (routine.recommendations) {
-      if (y > 260) { doc.addPage(); y = 20; }
-      doc.setFont(undefined, 'bold');
-      doc.text('Recomendaciones:', 20, y);
-      y += 6;
-      doc.setFont(undefined, 'normal');
-      const splitRec = doc.splitTextToSize(routine.recommendations, pageWidth - 40);
-      doc.text(splitRec, 20, y);
-      y += splitRec.length * 5 + 6;
-    }
-    if (routine.warnings) {
-      if (y > 260) { doc.addPage(); y = 20; }
-      doc.setFont(undefined, 'bold');
-      doc.text('Advertencias:', 20, y);
-      y += 6;
-      doc.setFont(undefined, 'normal');
-      const splitWar = doc.splitTextToSize(routine.warnings, pageWidth - 40);
-      doc.text(splitWar, 20, y);
-    }
-
-    doc.save(`Rutina-${routine.name.replace(/\s/g, '-')}.pdf`);
   };
 
   const handleMarkComplete = async () => {
-    if (!plannedWorkout) return;
+    if (!effectivePlannedWorkout) return;
     try {
-      await plannedWorkoutsApi.update(plannedWorkout.id, {
+      await plannedWorkoutsApi.update(effectivePlannedWorkout.id, {
         completed: true,
-        rpe: parseInt(completeForm.rpe) || null,
+        rpe: parseInt(completeForm.rpe, 10) || null,
         sensations: completeForm.sensations || null,
         feedback: completeForm.feedback || null,
         clientNotes: completeForm.feedback || null,
       });
       setMarkedComplete(true);
       setShowCompleteModal(false);
+      onPlannedWorkoutUpdated?.();
     } catch (err) {
       alert(err.message || 'Error al registrar');
     }
@@ -279,19 +249,81 @@ export default function RoutineDetail({ routine, clientName = null, showPdfButto
           </div>
           <div className="routine-detail-actions">
             {showPdfButton && (
-              <Button onClick={downloadPDF} className="btn-primary fw-medium">
+              <Button onClick={downloadPDF} className="routine-detail-actions-pdf btn-primary fw-medium">
                 Descargar PDF
               </Button>
             )}
-            {plannedWorkout && !plannedWorkout.completed && !markedComplete && (
-              <Button variant="success" onClick={() => setShowCompleteModal(true)}>
+            {plannedWorkoutsForRoutine.length > 0 && !plannedWorkout && (
+              <div className="routine-detail-plan-card">
+                <div className="routine-detail-plan-card-inner">
+                  <span className="routine-detail-plan-label">Día en el calendario</span>
+                  {effectivePlannedWorkout && (
+                    <div className="routine-detail-plan-summary">
+                      <span className="routine-detail-plan-summary-icon" aria-hidden>
+                        <IconDays />
+                      </span>
+                      <div className="routine-detail-plan-summary-main">
+                        <span className="routine-detail-plan-date">
+                          {formatPlanDateLabel(effectivePlannedWorkout.date)}
+                        </span>
+                        {(effectivePlannedWorkout.completed || markedComplete) ? (
+                          <Badge pill className="routine-detail-plan-status routine-detail-plan-status--done">
+                            Completado
+                          </Badge>
+                        ) : (
+                          <Badge pill className="routine-detail-plan-status routine-detail-plan-status--pending">
+                            Pendiente
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="routine-detail-plan-controls">
+                    <Form.Label className="routine-detail-plan-sublabel">Elegir otra fecha</Form.Label>
+                    <div className="routine-detail-plan-controls-row">
+                      <Form.Select
+                        size="sm"
+                        className="routine-detail-plan-select"
+                        value={selectedPlanId || ''}
+                        onChange={(e) => setSelectedPlanId(e.target.value || null)}
+                      >
+                        {plannedWorkoutsForRoutine.map((pw) => (
+                          <option key={pw.id} value={pw.id}>
+                            {formatPlanDateLabel(pw.date)}
+                            {pw.completed ? ' · completado' : ' · pendiente'}
+                          </option>
+                        ))}
+                      </Form.Select>
+                      {effectivePlannedWorkout && !effectivePlannedWorkout.completed && !markedComplete && (
+                        <Button variant="success" className="routine-detail-plan-complete-btn" onClick={() => setShowCompleteModal(true)}>
+                          Marcar como completado
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {plannedWorkout && effectivePlannedWorkout && !effectivePlannedWorkout.completed && !markedComplete && (
+              <Button variant="success" className="routine-detail-actions-complete" onClick={() => setShowCompleteModal(true)}>
                 Marcar como completado
               </Button>
             )}
-            {(plannedWorkout?.completed || markedComplete) && (
-              <span className="routine-detail-badge" style={{ background: 'rgba(16, 185, 129, 0.3)', color: '#fff' }}>
-                <IconCheck style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
-                Completado
+            {(effectivePlannedWorkout?.completed || markedComplete) &&
+              effectivePlannedWorkout &&
+              !(plannedWorkoutsForRoutine.length > 0 && !plannedWorkout) && (
+              <span className="routine-detail-badge routine-detail-badge--completed">
+                <span className="routine-detail-badge-completed-icon" aria-hidden>
+                  <IconCheck />
+                </span>
+                <span className="routine-detail-badge-completed-text">
+                  <span className="routine-detail-badge-completed-label">Completado</span>
+                  {effectivePlannedWorkout.date && (
+                    <span className="routine-detail-badge-completed-date">
+                      ({formatPlanDateLabel(effectivePlannedWorkout.date)})
+                    </span>
+                  )}
+                </span>
               </span>
             )}
           </div>
@@ -327,7 +359,7 @@ export default function RoutineDetail({ routine, clientName = null, showPdfButto
         </div>
       )}
 
-      {/* Bloques por día - Acordeón: primera activa por defecto */}
+      {/* Acordeón por bloque — todos plegados al entrar */}
       {dayBlocks.map(({ day, exercises: dayExs }) => {
         const isExpanded = expandedSession === day;
         return (
@@ -335,14 +367,15 @@ export default function RoutineDetail({ routine, clientName = null, showPdfButto
           <button
             type="button"
             className="routine-day-header routine-day-header-btn"
-            onClick={() => setExpandedSession(prev => prev === day ? null : day)}
+            onClick={() => setExpandedSession((prev) => (prev === day ? null : day))}
             aria-expanded={isExpanded}
           >
             <div className="routine-day-number">{day}</div>
             <div className="routine-day-header-text">
-              <div className="routine-day-title">Sesión {day}</div>
+              <div className="routine-day-title">Bloque {day}</div>
               <div className="routine-day-subtitle">
-                {dayExs.length} ejercicio{dayExs.length !== 1 ? 's' : ''} · ~{Math.round((routine.durationMinutes || 45) / (routine.daysCount || 1))} min
+                {dayExs.length} ejercicio{dayExs.length !== 1 ? 's' : ''}
+                {routine.daysCount ? ` · ${routine.daysCount} días/semana` : ''}
               </div>
             </div>
             <span className={`routine-day-chevron ${isExpanded ? 'routine-day-chevron--open' : ''}`}>
@@ -351,9 +384,13 @@ export default function RoutineDetail({ routine, clientName = null, showPdfButto
           </button>
           {isExpanded && (
           <div className="routine-exercises-list">
-            {dayExs.map((ex, i) => (
-              <article key={ex.id || i} className="ex-detail-card">
-                {/* Header: nombre + métricas integradas */}
+            {dayExs.map((ex, i) => {
+              const exKey = ex.id || `s${day}-e${i}`;
+              const hasInfo = !!(ex.description || ex.instructions || ex.observations);
+              const videoOpen = !!videoOpenByKey[exKey];
+              const twoCols = !!ex.videoUrl && videoOpen && hasInfo;
+              return (
+              <article key={exKey} className="ex-detail-card">
                 <header className="ex-detail-header">
                   <div className="ex-detail-header-inner">
                     <h3 className="ex-detail-name">{ex.name}</h3>
@@ -367,41 +404,60 @@ export default function RoutineDetail({ routine, clientName = null, showPdfButto
                   </div>
                 </header>
 
-                {/* Contenido principal: 2 columnas en desktop */}
-                <div className={`ex-detail-body ${ex.videoUrl && (ex.description || ex.instructions || ex.observations) ? 'ex-detail-body--two-cols' : ''}`}>
+                <div className="ex-detail-body">
                   {ex.videoUrl && (
-                    <div className="ex-detail-video-col">
-                      <VideoCard src={ex.videoUrl} variant="compact" embedTitle={`Video: ${ex.name}`} />
+                    <div className="ex-detail-video-toggle-row">
+                      <Button
+                        type="button"
+                        variant="outline-secondary"
+                        size="sm"
+                        className="ex-detail-video-toggle"
+                        onClick={() =>
+                          setVideoOpenByKey((p) => ({ ...p, [exKey]: !p[exKey] }))
+                        }
+                        aria-expanded={videoOpen}
+                      >
+                        <IconVideo />
+                        {videoOpen ? 'Ocultar video' : 'Ver video'}
+                      </Button>
                     </div>
                   )}
-                  {(ex.description || ex.instructions || ex.observations) && (
-                    <div className="ex-detail-info-col">
-                      <div className="ex-detail-info-card">
-                        <h4 className="ex-detail-info-card-title">Información del ejercicio</h4>
-                        {ex.description && (
-                          <div className="ex-detail-info-item">
-                            <span className="ex-detail-info-label">Descripción</span>
-                            <p className="ex-detail-info-text">{ex.description}</p>
-                          </div>
-                        )}
-                        {ex.instructions && (
-                          <div className="ex-detail-info-item">
-                            <span className="ex-detail-info-label">Indicaciones / Técnica</span>
-                            <p className="ex-detail-info-text">{ex.instructions}</p>
-                          </div>
-                        )}
-                        {ex.observations && (
-                          <div className="ex-detail-info-item ex-detail-info-obs">
-                            <span className="ex-detail-info-label"><IconInfo /> Importante</span>
-                            <p className="ex-detail-info-text">{ex.observations}</p>
-                          </div>
-                        )}
+                  <div className={`ex-detail-flex-main ${twoCols ? 'ex-detail-body--two-cols' : ''}`}>
+                    {videoOpen && ex.videoUrl && (
+                      <div className="ex-detail-video-col">
+                        <VideoCard src={ex.videoUrl} variant="compact" embedTitle={`Video: ${ex.name}`} />
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {hasInfo && (
+                      <div className="ex-detail-info-col">
+                        <div className="ex-detail-info-card">
+                          <h4 className="ex-detail-info-card-title">Información del ejercicio</h4>
+                          {ex.description && (
+                            <div className="ex-detail-info-item">
+                              <span className="ex-detail-info-label">Descripción</span>
+                              <p className="ex-detail-info-text">{ex.description}</p>
+                            </div>
+                          )}
+                          {ex.instructions && (
+                            <div className="ex-detail-info-item">
+                              <span className="ex-detail-info-label">Indicaciones / Técnica</span>
+                              <p className="ex-detail-info-text">{ex.instructions}</p>
+                            </div>
+                          )}
+                          {ex.observations && (
+                            <div className="ex-detail-info-item ex-detail-info-obs">
+                              <span className="ex-detail-info-label"><IconInfo /> Importante</span>
+                              <p className="ex-detail-info-text">{ex.observations}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </article>
-            ))}
+            );
+            })}
           </div>
           )}
         </div>

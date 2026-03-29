@@ -153,13 +153,13 @@ export default function CoachDashboard() {
 
       <div className="dashboard-quick-actions">
         <Link to="/coach/rutinas" className="quick-action-btn"><IconPlus /> Crear rutina</Link>
-        <Link to="/coach/alumnos" className="quick-action-btn"><IconUserPlus /> Asignar alumno</Link>
+        <Link to="/coach/usuarios" className="quick-action-btn"><IconUserPlus /> Asignar alumno</Link>
         <Link to="/coach/consultas" className="quick-action-btn"><IconMessage /> Enviar mensaje</Link>
         <Link to="/coach/calendario" className="quick-action-btn"><IconCalendar /> Ver calendario</Link>
       </div>
 
       <div className="dashboard-kpis kpis-grid">
-        <Link to="/coach/alumnos" className="kpi-card">
+        <Link to="/coach/usuarios" className="kpi-card">
           <div className="kpi-card-inner">
             <div className="kpi-icon-wrap kpi-users"><IconUsers /></div>
             <div>
@@ -226,7 +226,7 @@ export default function CoachDashboard() {
                     </div>
                   </div>
                   <div className="alumno-actions">
-                    <Link to={`/coach/alumnos/${alumno.id}`} className="alumno-action-btn" title="Ver perfil"><IconRoutines /></Link>
+                    <Link to={`/coach/usuarios/${alumno.id}`} className="alumno-action-btn" title="Ver perfil"><IconRoutines /></Link>
                     <Link to="/coach/consultas" className="alumno-action-btn" title="Enviar mensaje"><IconMessage /></Link>
                   </div>
                 </div>
@@ -242,7 +242,7 @@ export default function CoachDashboard() {
               <div className="dashboard-empty">No hay actividad reciente.</div>
             ) : (
               activityFeed.map((item, idx) => (
-                <Link key={idx} to={item.clientId ? `/coach/alumnos/${item.clientId}` : '/coach/consultas'} className="activity-item text-decoration-none">
+                <Link key={idx} to={item.clientId ? `/coach/usuarios/${item.clientId}` : '/coach/consultas'} className="activity-item text-decoration-none">
                   <div className={`activity-icon ${item.type}`}>
                     {item.type === 'alert' && <IconBell />}
                     {item.type === 'success' && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>}

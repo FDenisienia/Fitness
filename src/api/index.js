@@ -9,3 +9,4 @@ export { weightLogsApi } from './weightLogs.js';
 export { plannedWorkoutsApi } from './plannedWorkouts.js';
 export { clientRoutinesApi } from './clientRoutines.js';
 export { statsApi } from './stats.js';
+export { chatApi } from './chat.js';

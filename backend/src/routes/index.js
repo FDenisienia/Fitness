@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { prisma } from '../utils/prisma.js';
 import authRoutes from './authRoutes.js';
 import userRoutes from './userRoutes.js';
 import coachRoutes from './coachRoutes.js';
@@ -9,6 +10,7 @@ import clientRoutineRoutes from './clientRoutineRoutes.js';
 import weightLogRoutes from './weightLogRoutes.js';
 import plannedWorkoutRoutes from './plannedWorkoutRoutes.js';
 import statsRoutes from './statsRoutes.js';
+import chatRoutes from './chatRoutes.js';
 
 const router = Router();
 
@@ -22,9 +24,20 @@ router.use('/client-routines', clientRoutineRoutes);
 router.use('/weight-logs', weightLogRoutes);
 router.use('/planned-workouts', plannedWorkoutRoutes);
 router.use('/stats', statsRoutes);
+router.use('/chat', chatRoutes);
 
-router.get('/health', (req, res) => {
-  res.json({ success: true, message: 'Athlento API OK' });
+router.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ success: true, message: 'Athlento API OK', database: 'ok' });
+  } catch (err) {
+    res.status(503).json({
+      success: false,
+      message: 'Athlento API arrancó pero la base de datos no responde',
+      database: 'error',
+      ...(process.env.NODE_ENV === 'development' && { detail: err.message }),
+    });
+  }
 });
 
 export default router;

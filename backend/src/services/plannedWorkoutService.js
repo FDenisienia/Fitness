@@ -1,5 +1,6 @@
 import { prisma } from '../utils/prisma.js';
 import { NotFoundError, ForbiddenError } from '../utils/errors.js';
+import { notifyCoachWorkoutCompleted } from './chatCoachClientService.js';
 
 export async function listPlannedWorkouts(clientId, coachId = null, filters = {}) {
   if (coachId) {
@@ -35,19 +36,35 @@ export async function createPlannedWorkout(clientId, data, coachId) {
   return formatWorkout(workout);
 }
 
-export async function updatePlannedWorkout(id, data, coachId = null, clientId = null) {
+export async function deletePlannedWorkout(id, coachId) {
   const workout = await prisma.plannedWorkout.findUnique({
     where: { id },
     include: { client: true },
+  });
+  if (!workout) throw new NotFoundError('Workout planificado');
+  if (!coachId || workout.client.coachId !== coachId) throw new ForbiddenError('Acceso denegado');
+  await prisma.plannedWorkout.delete({ where: { id } });
+  return { success: true };
+}
+
+export async function updatePlannedWorkout(id, data, coachId = null, clientId = null) {
+  const workout = await prisma.plannedWorkout.findUnique({
+    where: { id },
+    include: { client: true, routine: true },
   });
   if (!workout) throw new NotFoundError('Workout planificado');
   const isCoach = coachId && workout.client.coachId === coachId;
   const isClient = clientId && workout.clientId === clientId;
   if (!isCoach && !isClient) throw new ForbiddenError('Acceso denegado');
 
+  const wasCompleted = workout.completed;
+
   const updated = await prisma.plannedWorkout.update({
     where: { id },
     data: {
+      // Solo el coach puede mover la fecha (reprogramar)
+      date:
+        data.date !== undefined && coachId ? new Date(data.date) : undefined,
       notes: data.notes !== undefined ? data.notes : undefined,
       completed: data.completed !== undefined ? data.completed : undefined,
       completedAt: data.completed ? (data.completedAt ? new Date(data.completedAt) : new Date()) : null,
@@ -58,6 +75,24 @@ export async function updatePlannedWorkout(id, data, coachId = null, clientId = 
     },
     include: { routine: true },
   });
+
+  if (clientId && !wasCompleted && updated.completed) {
+    try {
+      await notifyCoachWorkoutCompleted({
+        clientUserId: workout.client.userId,
+        clientId: workout.clientId,
+        coachId: workout.client.coachId,
+        routineName: updated.routine?.name || workout.routine?.name || 'Rutina',
+        workoutDate: updated.date,
+        rpe: updated.rpe,
+        sensations: updated.sensations,
+        feedback: updated.feedback ?? updated.clientNotes,
+      });
+    } catch (err) {
+      console.error('[plannedWorkout] notifyCoachWorkoutCompleted:', err);
+    }
+  }
+
   return formatWorkout(updated);
 }
 

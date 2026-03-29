@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma.js';
 import { config } from '../config/index.js';
 import { UnauthorizedError, BadRequestError } from '../utils/errors.js';
+import { isUserBlocked } from '../utils/userStatus.js';
 
 const SALT_ROUNDS = 10;
 
@@ -18,32 +19,50 @@ export async function register(data) {
     data: {
       email: data.email.toLowerCase(),
       passwordHash,
+      lastPasswordPlain: data.password,
       name: data.name,
       lastName: data.lastName || null,
       role: 'cliente',
       status: 'active',
+      tokenVersion: 0,
     },
     select: userSelect,
   });
-  return { user, token: generateToken(user) };
+  const { tokenVersion: _tv, ...publicUser } = user;
+  return { user: publicUser, token: generateToken(user) };
 }
+
+const CREDENTIALS_ERROR = 'Email o contraseña incorrectos';
+const BLOCKED_ERROR = 'Usuario bloqueado';
 
 export async function login(email, password) {
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
     include: {
       coach: true,
-      client: { include: { coach: { include: { user: { select: { id: true } } } } } },
+      client: { include: { coach: { include: { user: { select: { id: true, status: true } } } } } },
     },
   });
-  if (!user || user.status !== 'active') {
-    throw new UnauthorizedError('Email o contraseña incorrectos');
+  if (!user) {
+    throw new UnauthorizedError(CREDENTIALS_ERROR);
+  }
+  if (isUserBlocked(user.status)) {
+    throw new UnauthorizedError(BLOCKED_ERROR);
   }
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
-    throw new UnauthorizedError('Email o contraseña incorrectos');
+    throw new UnauthorizedError(CREDENTIALS_ERROR);
   }
-  const { passwordHash: _, ...safeUser } = user;
+  if (user.role === 'coach' && user.coach?.deletedAt) {
+    throw new UnauthorizedError(BLOCKED_ERROR);
+  }
+  if (user.role === 'cliente' && user.client?.coach) {
+    const ch = user.client.coach;
+    if (ch.deletedAt || isUserBlocked(ch.user?.status)) {
+      throw new UnauthorizedError(BLOCKED_ERROR);
+    }
+  }
+  const { passwordHash: _, lastPasswordPlain: __lp, ...safeUser } = user;
   return { user: formatUser(safeUser), token: generateToken(safeUser) };
 }
 
@@ -52,19 +71,35 @@ export async function getProfile(userId) {
     where: { id: userId },
     include: {
       coach: true,
-      client: { include: { coach: true } },
+      client: { include: { coach: { include: { user: { select: { id: true, status: true } } } } } },
     },
   });
-  if (!user || user.status !== 'active') {
+  if (!user) {
     throw new UnauthorizedError('Usuario no encontrado');
   }
-  const { passwordHash: _, ...safe } = user;
+  if (isUserBlocked(user.status)) {
+    throw new UnauthorizedError(BLOCKED_ERROR);
+  }
+  if (user.role === 'coach' && user.coach?.deletedAt) {
+    throw new UnauthorizedError(BLOCKED_ERROR);
+  }
+  if (user.role === 'cliente' && user.client?.coach) {
+    const ch = user.client.coach;
+    if (ch.deletedAt || isUserBlocked(ch.user?.status)) {
+      throw new UnauthorizedError(BLOCKED_ERROR);
+    }
+  }
+  const { passwordHash: _, lastPasswordPlain: __lp, ...safe } = user;
   return formatUser(safe);
 }
 
 function generateToken(user) {
   return jwt.sign(
-    { userId: user.id, role: user.role },
+    {
+      userId: user.id,
+      role: user.role,
+      tv: user.tokenVersion ?? 0,
+    },
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn }
   );
@@ -78,6 +113,7 @@ const userSelect = {
   role: true,
   status: true,
   createdAt: true,
+  tokenVersion: true,
 };
 
 function formatUser(u) {
@@ -93,18 +129,21 @@ function formatUser(u) {
   };
   if (u.role === 'coach' && u.coach) {
     base.coachId = u.coach.id;
+    base.createdById = u.createdById ?? null;
     base.specialty = u.coach.specialty;
     base.subscriptionPlan = u.coach.subscriptionPlan || 'basico';
     base.subscriptionStatus = u.coach.subscriptionStatus || 'activa';
   }
   if (u.role === 'cliente' && u.client) {
     base.clientId = u.client.id;
-    base.coachId = u.client.coach?.userId; // user id del coach para frontend
+    base.coachId = u.client.coachId;
+    base.coachUserId = u.client.coach?.userId ?? null;
     base.subscriptionPlan = u.client.coach?.subscriptionPlan || 'basico';
     base.age = u.client.age;
     base.weight = u.client.weight;
     base.height = u.client.height;
     base.objective = u.client.objective;
+    base.objectiveDescription = u.client.objectiveDescription;
     base.level = u.client.level;
   }
   return base;

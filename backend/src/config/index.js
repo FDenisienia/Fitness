@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import '../loadEnv.js';
 
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 const extraOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);

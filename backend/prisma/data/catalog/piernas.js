@@ -1,0 +1,55 @@
+import { VID, embed } from './videoIds.js';
+
+/** Ejercicios compuestos de pierna que no encajan solo en un grupo (legacy / rutinas generales). */
+export default [
+  {
+    name: 'Hack squat en máquina',
+    description: 'Sentadilla guiada con énfasis en cuádriceps.',
+    instructions: 'Espalda en el soporte, pies al medio del plataforma. Desciende hasta paralelo y empuja sin despegar espalda.',
+    muscleGroup: 'Piernas',
+    equipment: 'Máquina',
+    caloriasPorRep: 0.41,
+    caloriasPorMin: null,
+    videoUrl: embed(VID.legPress),
+  },
+  {
+    name: 'Sentadilla hack con barra',
+    description: 'Variante con torso más vertical en máquina o barra hack.',
+    instructions: 'Hombros bajo los soportes, desciende igual que sentadilla manteniendo rodillas alineadas.',
+    muscleGroup: 'Piernas',
+    equipment: 'Barra',
+    caloriasPorRep: 0.44,
+    caloriasPorMin: null,
+    videoUrl: embed(VID.squat),
+  },
+  {
+    name: 'Step-up con mancuernas',
+    description: 'Subida a caja para fuerza unilateral.',
+    instructions: 'Pie completo en el step, empuja con el talón sin empujar con la pierna trasera. Alterna.',
+    muscleGroup: 'Piernas',
+    equipment: 'Mancuernas',
+    caloriasPorRep: 0.4,
+    caloriasPorMin: null,
+    videoUrl: embed(VID.lunge),
+  },
+  {
+    name: 'Sentadilla isométrica con banda',
+    description: 'Fuerza y estabilidad con resistencia lateral.',
+    instructions: 'Banda sobre rodillas, desciende a 90° y mantén sin valgo excesivo.',
+    muscleGroup: 'Piernas',
+    equipment: 'Bandas',
+    caloriasPorRep: 0.36,
+    caloriasPorMin: null,
+    videoUrl: embed(VID.squat),
+  },
+  {
+    name: 'Peso muerto con mancuernas',
+    description: 'Variación de peso muerto con agarre neutro.',
+    instructions: 'Mancuernas a los lados, bisagra de cadera, espalda neutra. Barra cerca de piernas.',
+    muscleGroup: 'Piernas',
+    equipment: 'Mancuernas',
+    caloriasPorRep: 0.42,
+    caloriasPorMin: null,
+    videoUrl: embed(VID.deadlift),
+  },
+];

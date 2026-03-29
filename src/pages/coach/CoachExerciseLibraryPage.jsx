@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePlan } from '../../context/PlanContext';
 import { exercisesApi } from '../../api';
 import { MUSCLE_GROUPS, EQUIPMENT } from '../../data/mockData';
+import { isValidYoutubeEmbedUrl } from '../../utils/youtubeEmbed';
 
 export default function CoachExerciseLibraryPage() {
   const { user } = useAuth();
@@ -36,16 +37,29 @@ export default function CoachExerciseLibraryPage() {
   });
 
   const addPersonalExercise = async () => {
-    if (!form.name) return;
+    if (!form.name?.trim()) return;
+    if (!form.muscleGroup || !form.equipment) {
+      alert('Selecciona grupo muscular y equipamiento.');
+      return;
+    }
+    const vUrl = form.videoUrl?.trim() || '';
+    if (vUrl && !isValidYoutubeEmbedUrl(vUrl)) {
+      alert('La URL de vídeo debe ser un enlace embed de YouTube (https://www.youtube.com/embed/...).');
+      return;
+    }
+    if (form.caloriasPorRep && form.caloriasPorMin) {
+      alert('Indica solo calorías por repetición o por minuto, no ambas.');
+      return;
+    }
     setSaving(true);
     try {
       await exercisesApi.create({
-        name: form.name,
-        description: form.description || null,
-        instructions: form.instructions || null,
+        name: form.name.trim(),
+        description: form.description?.trim() || null,
+        instructions: form.instructions?.trim() || null,
         muscleGroup: form.muscleGroup || null,
         equipment: form.equipment || null,
-        videoUrl: form.videoUrl || null,
+        videoUrl: vUrl || null,
         caloriasPorRep: form.caloriasPorRep ? parseFloat(form.caloriasPorRep) : null,
         caloriasPorMin: form.caloriasPorMin ? parseFloat(form.caloriasPorMin) : null,
       });
@@ -102,22 +116,33 @@ export default function CoachExerciseLibraryPage() {
       <Modal show={showAdd} onHide={() => setShowAdd(false)}>
         <Modal.Header closeButton><Modal.Title>Añadir ejercicio a tu biblioteca</Modal.Title></Modal.Header>
         <Modal.Body>
-          <Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Nombre <span className="text-danger">*</span></Form.Label><Form.Control value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Descripción</Form.Label><Form.Control as="textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Instrucciones</Form.Label><Form.Control as="textarea" value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} /></Form.Group>
           <Row>
-            <Col md={6}><Form.Group className="mb-3"><Form.Label>Grupo muscular</Form.Label><Form.Select value={form.muscleGroup} onChange={e => setForm(f => ({ ...f, muscleGroup: e.target.value }))}><option value="">Seleccionar</option>{MUSCLE_GROUPS.map(m => <option key={m} value={m}>{m}</option>)}</Form.Select></Form.Group></Col>
-            <Col md={6}><Form.Group className="mb-3"><Form.Label>Equipamiento</Form.Label><Form.Select value={form.equipment} onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))}><option value="">Seleccionar</option>{EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}</Form.Select></Form.Group></Col>
+            <Col md={6}><Form.Group className="mb-3"><Form.Label>Grupo muscular <span className="text-danger">*</span></Form.Label><Form.Select value={form.muscleGroup} onChange={e => setForm(f => ({ ...f, muscleGroup: e.target.value }))} required><option value="">Seleccionar</option>{MUSCLE_GROUPS.map(m => <option key={m} value={m}>{m}</option>)}</Form.Select></Form.Group></Col>
+            <Col md={6}><Form.Group className="mb-3"><Form.Label>Equipamiento <span className="text-danger">*</span></Form.Label><Form.Select value={form.equipment} onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))} required><option value="">Seleccionar</option>{EQUIPMENT.map(eq => <option key={eq} value={eq}>{eq}</option>)}</Form.Select></Form.Group></Col>
           </Row>
           <Row>
             <Col md={6}><Form.Group className="mb-3"><Form.Label>Cal/rep</Form.Label><Form.Control type="number" step="0.1" value={form.caloriasPorRep} onChange={e => setForm(f => ({ ...f, caloriasPorRep: e.target.value }))} placeholder="Por repetición" /></Form.Group></Col>
             <Col md={6}><Form.Group className="mb-3"><Form.Label>Cal/min</Form.Label><Form.Control type="number" step="0.1" value={form.caloriasPorMin} onChange={e => setForm(f => ({ ...f, caloriasPorMin: e.target.value }))} placeholder="Por minuto (cardio)" /></Form.Group></Col>
           </Row>
-          <Form.Group><Form.Label>URL video</Form.Label><Form.Control value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} /></Form.Group>
+          <Form.Group>
+            <Form.Label>URL video (YouTube embed)</Form.Label>
+            <Form.Control value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://www.youtube.com/embed/..." />
+            {form.videoUrl?.trim() && !isValidYoutubeEmbedUrl(form.videoUrl.trim()) && (
+              <Form.Text className="text-danger d-block">Usa el formato embed: https://www.youtube.com/embed/VIDEO_ID</Form.Text>
+            )}
+            {form.videoUrl?.trim() && isValidYoutubeEmbedUrl(form.videoUrl.trim()) && (
+              <div className="ratio ratio-16x9 mt-2 border rounded overflow-hidden bg-dark">
+                <iframe title="Vista previa del vídeo" src={form.videoUrl.trim()} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              </div>
+            )}
+          </Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowAdd(false)}>Cancelar</Button>
-          <Button className="btn-primary" onClick={addPersonalExercise} disabled={saving}>{saving ? 'Añadiendo...' : 'Añadir'}</Button>
+          <Button className="btn-primary" onClick={addPersonalExercise} disabled={saving || !form.name?.trim() || !form.muscleGroup || !form.equipment}>{saving ? 'Añadiendo...' : 'Añadir'}</Button>
         </Modal.Footer>
       </Modal>
     </div>

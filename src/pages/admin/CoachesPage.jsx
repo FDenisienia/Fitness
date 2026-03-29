@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Badge, Form, Spinner } from 'react-bootstrap';
-import { coachesApi } from '../../api';
+import { Card, Table, Button, Modal, Badge, Form, Spinner, Alert } from 'react-bootstrap';
+import { coachesApi, usersApi } from '../../api';
+import ChangePasswordModal from '../../components/ChangePasswordModal';
+import {
+  deactivateCoachAsAdmin,
+  activateCoachAsAdmin,
+  softDeleteCoachAsAdmin,
+} from '../../services/coachAdminService';
 import { SUBSCRIPTION_PLANS } from '../../data/mockData';
 
-export default function CoachesPage() {
+export default function CoachesPage({ embedded = false }) {
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
@@ -13,6 +19,12 @@ export default function CoachesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newCoach, setNewCoach] = useState({ name: '', lastName: '', email: '', password: '', specialty: '', subscriptionPlan: 'basico' });
   const [creating, setCreating] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [actionCoach, setActionCoach] = useState(null);
+  const [pwTarget, setPwTarget] = useState(null);
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+  const [pwBanner, setPwBanner] = useState({ variant: '', text: '' });
 
   const loadCoaches = async () => {
     try {
@@ -26,7 +38,9 @@ export default function CoachesPage() {
     loadCoaches();
   }, []);
 
-  const getClientsCount = (coach) => coach.clientsCount ?? 0;
+  const getTotalClients = (coach) => coach.clientsCount ?? 0;
+  const getActiveClients = (coach) =>
+    typeof coach.activeClientsCount === 'number' ? coach.activeClientsCount : 0;
 
   const openEdit = (c) => {
     setEditingCoach(c);
@@ -84,19 +98,120 @@ export default function CoachesPage() {
     }
   };
 
+  const openConfirm = (type, c) => {
+    setConfirmModal(type);
+    setActionCoach(c);
+  };
+
+  const closeConfirm = () => {
+    if (actionLoading) return;
+    setConfirmModal(null);
+    setActionCoach(null);
+  };
+
+  const runDeactivate = async () => {
+    if (!actionCoach) return;
+    setActionLoading(true);
+    try {
+      await deactivateCoachAsAdmin(actionCoach.id);
+      await loadCoaches();
+      closeConfirm();
+    } catch (err) {
+      alert(err.message || 'Error al desactivar');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const runActivate = async () => {
+    if (!actionCoach) return;
+    setActionLoading(true);
+    try {
+      await activateCoachAsAdmin(actionCoach.id);
+      await loadCoaches();
+      closeConfirm();
+    } catch (err) {
+      alert(err.message || 'Error al activar');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const runDelete = async () => {
+    if (!actionCoach) return;
+    setActionLoading(true);
+    try {
+      await softDeleteCoachAsAdmin(actionCoach.id);
+      await loadCoaches();
+      closeConfirm();
+    } catch (err) {
+      alert(err.message || 'Error al eliminar');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openPasswordModal = (c) => {
+    const uid = c.userId ?? c.user?.id;
+    if (!uid) {
+      setPwBanner({ variant: 'danger', text: 'No se pudo identificar el usuario del coach.' });
+      return;
+    }
+    setPwBanner({ variant: '', text: '' });
+    setPwTarget({
+      userId: uid,
+      label: `${c.name || ''} ${c.lastName || ''}`.trim() || c.email,
+      lastKnownPassword: c.user?.lastPasswordPlain ?? null,
+    });
+  };
+
+  const submitCoachPassword = async (password) => {
+    if (!pwTarget) return;
+    setPwSubmitting(true);
+    setPwBanner({ variant: '', text: '' });
+    try {
+      await usersApi.patchPassword(pwTarget.userId, { password });
+      setPwBanner({ variant: 'success', text: 'Contraseña actualizada correctamente' });
+      setPwTarget(null);
+      loadCoaches();
+    } catch (err) {
+      const msg = err?.data?.error || err.message || 'No se pudo actualizar la contraseña';
+      setPwBanner({ variant: 'danger', text: msg });
+    } finally {
+      setPwSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <div className="d-flex justify-content-center py-5"><Spinner animation="border" /></div>;
   }
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="mb-1">Coaches (tus clientes)</h2>
-          <p className="text-muted mb-0">Crear, gestionar y controlar uso de la plataforma</p>
+      {pwBanner.text && (
+        <Alert
+          variant={pwBanner.variant === 'success' ? 'success' : 'danger'}
+          className="mb-3"
+          dismissible
+          onClose={() => setPwBanner({ variant: '', text: '' })}
+        >
+          {pwBanner.text}
+        </Alert>
+      )}
+      {!embedded && (
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 className="mb-1">Coaches (tus clientes)</h2>
+            <p className="text-muted mb-0">Crear, gestionar y controlar uso de la plataforma</p>
+          </div>
+          <Button onClick={() => setShowCreate(true)} className="btn-primary">Crear coach</Button>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="btn-primary">Crear coach</Button>
-      </div>
+      )}
+      {embedded && (
+        <div className="d-flex justify-content-end mb-3">
+          <Button onClick={() => setShowCreate(true)} className="btn-primary">Crear coach</Button>
+        </div>
+      )}
       <Card>
         <Table responsive className="table-modern mb-0">
           <thead>
@@ -113,17 +228,49 @@ export default function CoachesPage() {
           <tbody>
             {coaches.map(c => {
               const plan = SUBSCRIPTION_PLANS[c.subscriptionPlan] || SUBSCRIPTION_PLANS.basico;
-              const count = getClientsCount(c);
+              const totalAl = getTotalClients(c);
+              const activeAl = getActiveClients(c);
+              const isDeleted = !!(c.deletedAt || c.coachEliminado);
+              const isActive = c.active !== false && c.status === 'active';
               return (
                 <tr key={c.id}>
                   <td>{c.name} {c.lastName}</td>
                   <td>{c.email}</td>
                   <td><Badge bg="primary">{plan.name}</Badge> {plan.id === 'personalizado' ? 'Personalizado' : `USD ${Number(plan.price).toFixed(2)}/mes`}</td>
-                  <td><strong>{count}</strong>/{plan.maxAlumnos === 999 ? '∞' : plan.maxAlumnos}</td>
+                  <td className="small">
+                    <strong>{activeAl}</strong> activos
+                    <span className="text-muted"> · </span>
+                    <strong>{totalAl}</strong> total
+                    <span className="text-muted"> / plan {plan.maxAlumnos === 999 ? '∞' : plan.maxAlumnos}</span>
+                  </td>
                   <td>{c.specialty || '-'}</td>
-                  <td><Badge bg={c.active !== false ? 'success' : 'secondary'}>{c.active !== false ? 'Activo' : 'Inactivo'}</Badge></td>
                   <td>
-                    <Button size="sm" variant="outline-secondary" className="me-1" onClick={() => openEdit(c)}>Editar</Button>
+                    <div className="d-flex flex-wrap gap-1 align-items-center">
+                      {isDeleted && <Badge bg="dark">Eliminado (lógico)</Badge>}
+                      {!isDeleted && (
+                        <Badge bg={isActive ? 'success' : 'secondary'}>{isActive ? 'Cuenta activa' : 'Cuenta inactiva'}</Badge>
+                      )}
+                      {c.legacyUnassigned && <Badge bg="info" title="Sin createdBy en BD — asignar admin si aplica">Legacy</Badge>}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="d-flex flex-wrap gap-1">
+                      {!isDeleted && (
+                        <>
+                          <Button size="sm" variant="outline-secondary" onClick={() => openEdit(c)}>Editar</Button>
+                          <Button size="sm" variant="outline-primary" onClick={() => openPasswordModal(c)}>
+                            Cambiar contraseña
+                          </Button>
+                          {isActive ? (
+                            <Button size="sm" variant="outline-warning" onClick={() => openConfirm('deactivate', c)}>Desactivar</Button>
+                          ) : (
+                            <Button size="sm" variant="outline-success" onClick={() => openConfirm('activate', c)}>Activar</Button>
+                          )}
+                          <Button size="sm" variant="outline-danger" onClick={() => openConfirm('delete', c)}>Eliminar</Button>
+                        </>
+                      )}
+                      {isDeleted && <span className="text-muted small">Solo lectura en listado</span>}
+                    </div>
                   </td>
                 </tr>
               );
@@ -163,6 +310,58 @@ export default function CoachesPage() {
           <Button className="btn-primary" onClick={createCoach} disabled={creating || !newCoach.email || !newCoach.password}>{creating ? 'Creando...' : 'Crear'}</Button>
         </Modal.Footer>
       </Modal>
+
+      <Modal show={confirmModal === 'deactivate'} onHide={closeConfirm} centered>
+        <Modal.Header closeButton><Modal.Title>Desactivar coach</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Alert variant="warning" className="mb-0">
+            Se desactivará a <strong>{actionCoach?.name} {actionCoach?.lastName}</strong> y <strong>todos sus clientes</strong>.
+            Nadie de ese equipo podrá iniciar sesión hasta que reactives la cuenta del coach.
+          </Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeConfirm} disabled={actionLoading}>Cancelar</Button>
+          <Button variant="warning" onClick={runDeactivate} disabled={actionLoading}>{actionLoading ? 'Procesando...' : 'Desactivar'}</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={confirmModal === 'activate'} onHide={closeConfirm} centered>
+        <Modal.Header closeButton><Modal.Title>Activar coach</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <p className="mb-0">
+            Se reactivará a <strong>{actionCoach?.name} {actionCoach?.lastName}</strong> y <strong>todos sus clientes</strong> asociados a su cuenta.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeConfirm} disabled={actionLoading}>Cancelar</Button>
+          <Button variant="success" onClick={runActivate} disabled={actionLoading}>{actionLoading ? 'Procesando...' : 'Activar'}</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={confirmModal === 'delete'} onHide={closeConfirm} centered>
+        <Modal.Header closeButton><Modal.Title>Eliminar coach</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Alert variant="danger" className="mb-0">
+            Se dará de baja a <strong>{actionCoach?.name} {actionCoach?.lastName}</strong> (eliminación lógica). Sus clientes quedarán desactivados y
+            <strong> no podrán quedar huérfanos</strong>: siguen vinculados al coach en el sistema, pero sin acceso hasta que un administrador gestione la cuenta.
+          </Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeConfirm} disabled={actionLoading}>Cancelar</Button>
+          <Button variant="danger" onClick={runDelete} disabled={actionLoading}>{actionLoading ? 'Procesando...' : 'Eliminar definitivamente'}</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <ChangePasswordModal
+        show={!!pwTarget}
+        onHide={() => !pwSubmitting && setPwTarget(null)}
+        title="Cambiar contraseña"
+        targetLabel={pwTarget?.label}
+        lastKnownPassword={pwTarget?.lastKnownPassword ?? null}
+        submitLabel="Cambiar contraseña"
+        submitting={pwSubmitting}
+        onSubmit={submitCoachPassword}
+      />
     </div>
   );
 }

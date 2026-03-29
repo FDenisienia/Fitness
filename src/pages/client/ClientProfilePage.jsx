@@ -42,8 +42,11 @@ export default function ClientProfilePage() {
     }
   };
 
+  const showObjectiveDescription =
+    user?.objective === 'personalizado' && Boolean(user?.objectiveDescription?.trim());
+
   return (
-    <div>
+    <div className="client-profile-page">
       <h2 className="mb-4">Mi perfil</h2>
       <Card className="mb-4">
         <Card.Header><strong>Datos personales</strong></Card.Header>
@@ -69,9 +72,19 @@ export default function ClientProfilePage() {
               </div>
               <div className="col-md-6">
                 <Form.Label>Objetivo</Form.Label>
-                <Form.Select value={profileForm.objective} onChange={e => setProfileForm(f => ({ ...f, objective: e.target.value }))}>
+                <Form.Select
+                  value={profileForm.objective}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setProfileForm((f) => ({ ...f, objective: v }));
+                  }}
+                >
                   <option value="">— Seleccionar —</option>
-                  {OBJECTIVES.map(o => <option key={o} value={o}>{o}</option>)}
+                  {OBJECTIVES.map((o) => (
+                    <option key={o} value={o}>
+                      {o.charAt(0).toUpperCase() + o.slice(1)}
+                    </option>
+                  ))}
                 </Form.Select>
               </div>
               <div className="col-md-6">
@@ -81,6 +94,15 @@ export default function ClientProfilePage() {
                   {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                 </Form.Select>
               </div>
+              {showObjectiveDescription && (
+                <div className="col-12">
+                  <div className="client-profile-objective-desc">
+                    <span className="client-profile-objective-desc__label">Descripción del objetivo</span>
+                    <p className="client-profile-objective-desc__text">{user.objectiveDescription}</p>
+                    <p className="client-profile-objective-desc__hint">Tu coach definió este texto; si tenés dudas, consultale.</p>
+                  </div>
+                </div>
+              )}
               <div className="col-12">
                 <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</Button>
                 {savedMsg && <span className="ms-3 text-success">{savedMsg}</span>}

@@ -38,3 +38,14 @@ export async function update(req, res, next) {
     next(err);
   }
 }
+
+export async function remove(req, res, next) {
+  try {
+    const coachId = req.user?.coach?.id;
+    if (!coachId) return res.status(403).json({ success: false, error: 'Solo el coach puede eliminar planificaciones' });
+    await plannedWorkoutService.deletePlannedWorkout(req.params.id, coachId);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}

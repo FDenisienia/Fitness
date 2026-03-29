@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { routinesApi, plannedWorkoutsApi } from '../../api';
@@ -22,6 +22,8 @@ export default function ClientRoutinesPage() {
   const [routines, setRoutines] = useState([]);
   const [plannedWorkouts, setPlannedWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detailRoutine, setDetailRoutine] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     if (!user?.clientId) return setLoading(false);
@@ -36,17 +38,58 @@ export default function ClientRoutinesPage() {
     load();
   }, [user?.clientId]);
 
+  useEffect(() => {
+    if (!routineId || !user?.clientId) {
+      setDetailRoutine(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    routinesApi
+      .getById(routineId)
+      .then((res) => {
+        if (!cancelled) setDetailRoutine(res.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setDetailRoutine(null);
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [routineId, user?.clientId]);
+
   const toDateStr = (d) => (d ? String(d).slice(0, 10) : '');
+
+  const workoutsForRoutine = useMemo(() => {
+    if (!routineId) return [];
+    return [...plannedWorkouts]
+      .filter((pw) => pw.routineId === routineId)
+      .sort((a, b) => toDateStr(a.date).localeCompare(toDateStr(b.date)));
+  }, [routineId, plannedWorkouts]);
+
+  const plannedWorkoutFromUrl = useMemo(() => {
+    if (!dateParam || !routineId) return null;
+    return workoutsForRoutine.find((pw) => toDateStr(pw.date) === dateParam) || null;
+  }, [dateParam, routineId, workoutsForRoutine]);
+
+  const reloadPlannedWorkouts = useCallback(async () => {
+    if (!user?.clientId) return;
+    try {
+      const pwRes = await plannedWorkoutsApi.listByClient(user.clientId);
+      setPlannedWorkouts(pwRes.data || []);
+    } catch (_) {}
+  }, [user?.clientId]);
 
   if (loading) {
     return <div className="d-flex justify-content-center py-5"><Spinner animation="border" /></div>;
   }
 
   if (routineId) {
-    const plannedWorkout = dateParam
-      ? plannedWorkouts.find(pw => pw.routineId === routineId && toDateStr(pw.date) === dateParam)
-      : null;
-    const routine = routines.find(r => r.id === routineId);
+    const routine = detailRoutine || routines.find(r => r.id === routineId);
+    if (detailLoading && !routine) {
+      return <div className="d-flex justify-content-center py-5"><Spinner animation="border" /></div>;
+    }
     if (!routine) return <p className="text-muted">Rutina no encontrada.</p>;
     return (
       <div>
@@ -54,7 +97,14 @@ export default function ClientRoutinesPage() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           Volver
         </Link>
-        <RoutineDetail routine={routine} clientName={`${user?.name} ${user?.lastName}`} showPdfButton={true} plannedWorkout={plannedWorkout} />
+        <RoutineDetail
+          routine={routine}
+          clientName={`${user?.name} ${user?.lastName}`}
+          showPdfButton={true}
+          plannedWorkout={plannedWorkoutFromUrl}
+          plannedWorkoutsForRoutine={workoutsForRoutine}
+          onPlannedWorkoutUpdated={reloadPlannedWorkouts}
+        />
       </div>
     );
   }

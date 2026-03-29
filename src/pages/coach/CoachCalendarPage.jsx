@@ -87,6 +87,32 @@ export default function CoachCalendarPage() {
     }
   };
 
+  const handleDeleteWorkout = async (pw) => {
+    if (!confirm('¿Quitar este entrenamiento del calendario? El alumno dejará de verlo en su planificación.')) return;
+    try {
+      await plannedWorkoutsApi.remove(pw.id);
+      loadData();
+    } catch (err) {
+      alert(err.message || 'Error al eliminar');
+    }
+  };
+
+  const handleRescheduleWorkout = async (pw, newDateStr) => {
+    if (!newDateStr) return;
+    const prev = typeof pw.date === 'string' ? pw.date.slice(0, 10) : new Date(pw.date).toISOString().slice(0, 10);
+    if (newDateStr === prev) {
+      alert('Elige otra fecha distinta a la actual.');
+      throw new Error('same-date');
+    }
+    try {
+      await plannedWorkoutsApi.update(pw.id, { date: newDateStr });
+      loadData();
+    } catch (err) {
+      alert(err.message || 'Error al reprogramar');
+      throw err;
+    }
+  };
+
   if (loading) {
     return <div className="d-flex justify-content-center py-5"><Spinner animation="border" /></div>;
   }
@@ -109,9 +135,12 @@ export default function CoachCalendarPage() {
       <Calendar
         plannedWorkouts={normalizedWorkouts}
         routines={routines}
+        clients={clients}
         onSelectDay={(date, workouts, isAdd) => handleAddWorkout(date, workouts, isAdd)}
         onWorkoutClick={handleWorkoutClick}
         onMarkComplete={handleMarkComplete}
+        onDeleteWorkout={handleDeleteWorkout}
+        onRescheduleWorkout={handleRescheduleWorkout}
         mode="plan"
       />
 

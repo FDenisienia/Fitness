@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PlanProvider } from './context/PlanContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -13,16 +13,13 @@ import RegisterPage from './pages/public/RegisterPage';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
-import CoachesPage from './pages/admin/CoachesPage';
 import AdminPlansPage from './pages/admin/AdminPlansPage';
 import ExerciseLibraryPage from './pages/admin/ExerciseLibraryPage';
 import ConsultationsPage from './pages/admin/ConsultationsPage';
-import ClientsPage from './pages/admin/ClientsPage';
 import UsersPage from './pages/admin/UsersPage';
 import RoutinesPage from './pages/admin/RoutinesPage';
 
 import CoachDashboard from './pages/coach/CoachDashboard';
-import CoachClientsPage from './pages/coach/CoachClientsPage';
 import CoachRoutinesPage from './pages/coach/CoachRoutinesPage';
 import CoachRoutineDetailPage from './pages/coach/CoachRoutineDetailPage';
 import CoachCalendarPage from './pages/coach/CoachCalendarPage';
@@ -37,6 +34,11 @@ import ClientProfilePage from './pages/client/ClientProfilePage';
 import ClientCalendarPage from './pages/client/ClientCalendarPage';
 import ClientSeguimientoPage from './pages/client/ClientSeguimientoPage';
 import ClientConsultationsPage from './pages/client/ClientConsultationsPage';
+
+function RedirectCoachAlumnosToUsuarios() {
+  const { clientId } = useParams();
+  return <Navigate to={clientId ? `/coach/usuarios/${clientId}` : '/coach/usuarios'} replace />;
+}
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -64,8 +66,7 @@ export default function App() {
           </ProtectedRoute>
         }>
           <Route index element={<AdminDashboard />} />
-          <Route path="coaches" element={<CoachesPage />} />
-          <Route path="alumnos" element={<ClientsPage />} />
+          <Route path="coaches" element={<Navigate to="/admin/usuarios" replace />} />
           <Route path="usuarios" element={<UsersPage />} />
           <Route path="rutinas" element={<RoutinesPage />} />
           <Route path="planes" element={<AdminPlansPage />} />
@@ -80,8 +81,10 @@ export default function App() {
         }>
           <Route index element={<CoachDashboard />} />
           <Route path="calendario" element={<CoachCalendarPage />} />
-          <Route path="alumnos" element={<CoachClientsPage />} />
-          <Route path="alumnos/:clientId" element={<CoachClientsPage />} />
+          <Route path="usuarios" element={<UsersPage />} />
+          <Route path="usuarios/:clientId" element={<UsersPage />} />
+          <Route path="alumnos" element={<RedirectCoachAlumnosToUsuarios />} />
+          <Route path="alumnos/:clientId" element={<RedirectCoachAlumnosToUsuarios />} />
           <Route path="seguimiento" element={<PlanGuard feature="hasWeightTracking"><CoachWeightPage /></PlanGuard>} />
           <Route path="seguimiento/:clientId" element={<PlanGuard feature="hasWeightTracking"><CoachWeightPage /></PlanGuard>} />
           <Route path="rutinas" element={<CoachRoutinesPage />} />

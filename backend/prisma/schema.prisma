@@ -13,12 +13,25 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String  @map("password_hash")
+  /// Última contraseña en claro (solo gestión interna: se guarda al crear usuario o al cambiar desde admin/coach). No exponer al cliente en login/perfil.
+  lastPasswordPlain String? @map("last_password_plain") @db.Text
+  /// Se incrementa al cambiar contraseña para invalidar JWTs previos (campo `tv` en el token).
+  tokenVersion Int     @default(0) @map("token_version")
   name         String
   lastName     String?  @map("last_name")
   role         String   // admin | coach | cliente
-  status       String   @default("active") // active | inactive
+  status       String   @default("active") // active | inactive | blocked
+  /// Admin (User.id) que dio de alta a este usuario cuando role = coach
+  createdById  String?  @map("created_by_id")
+  /// Coach.id del coach asignado cuando role = cliente (espejo de Client.coach_id)
+  assignedCoachId String? @map("assigned_coach_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  createdBy    User?    @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  coachesCreated User[] @relation("UserCreatedBy")
+
+  assignedCoach Coach?  @relation("UserAssignedCoach", fields: [assignedCoachId], references: [id], onDelete: SetNull)
 
   coach    Coach?
   client   Client?
@@ -33,10 +46,13 @@ model Coach {
   bio             String?  @db.Text
   subscriptionPlan String? @map("subscription_plan") // basico | pro | premium | personalizado
   subscriptionStatus String? @default("activa") @map("subscription_status")
+  /// Soft delete: coach dado de baja; no borra filas ni deja clientes huérfanos (siguen ligados al Coach).
+  deletedAt       DateTime? @map("deleted_at")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedUsers   User[]   @relation("UserAssignedCoach")
   clients         Client[]
   routines        Routine[]
   adminConversations AdminCoachConversation[]
@@ -50,8 +66,9 @@ model Client {
   age         Int?
   weight      Float?
   height      Float?
-  objective   String?
-  level       String?
+  objective            String?
+  objectiveDescription String? @map("objective_description") @db.Text // solo si objective === "personalizado"
+  level                String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -65,6 +82,7 @@ model Client {
 }
 
 // ===== BIBLIOTECA DE EJERCICIOS =====
+// Biblioteca global/coach. Futuro: tags Json?, difficulty String?, secondaryMuscleGroups String[]
 model ExerciseLibrary {
   id            String   @id @default(cuid())
   name          String
@@ -125,6 +143,7 @@ model RoutineExercise {
   caloriasPorMin Float?  @map("calorias_por_min")
   videoUrl      String?  @map("video_url")
   orderIndex    Int      @default(0) @map("order_index")
+  sessionIndex  Int      @default(1) @map("session_index") // 1 = Bloque 1, 2 = Bloque 2, etc.
   notes         String?  @db.Text
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

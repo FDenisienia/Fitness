@@ -1,5 +1,30 @@
 import { prisma } from '../utils/prisma.js';
-import { NotFoundError, ForbiddenError } from '../utils/errors.js';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors.js';
+import { isValidYoutubeEmbedUrl } from '../utils/youtubeEmbed.js';
+
+function normVideoUrl(url) {
+  if (url == null || url === '') return null;
+  const t = String(url).trim();
+  return t || null;
+}
+
+function assertVideoUrl(videoUrl) {
+  if (videoUrl !== undefined && videoUrl !== null && videoUrl !== '' && !isValidYoutubeEmbedUrl(String(videoUrl).trim())) {
+    throw new BadRequestError('La URL de vídeo debe ser un enlace embed de YouTube (https://www.youtube.com/embed/...)');
+  }
+}
+
+function parseCal(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function assertCaloriesPair(caloriasPorRep, caloriasPorMin) {
+  if (caloriasPorRep != null && caloriasPorMin != null) {
+    throw new BadRequestError('Indica solo calorías por repetición o por minuto, no ambas a la vez.');
+  }
+}
 
 export async function listExercises(filters = {}, coachId = null) {
   const { search, muscleGroup, scope } = filters;
@@ -29,6 +54,11 @@ export async function getExerciseById(id) {
 }
 
 export async function createExercise(data, createdById = null, scope = 'global') {
+  assertVideoUrl(data.videoUrl);
+  const caloriasPorRep = parseCal(data.caloriasPorRep);
+  const caloriasPorMin = parseCal(data.caloriasPorMin);
+  assertCaloriesPair(caloriasPorRep, caloriasPorMin);
+  const videoUrl = normVideoUrl(data.videoUrl);
   return prisma.exerciseLibrary.create({
     data: {
       name: data.name,
@@ -36,9 +66,9 @@ export async function createExercise(data, createdById = null, scope = 'global')
       instructions: data.instructions || null,
       muscleGroup: data.muscleGroup || null,
       equipment: data.equipment || null,
-      caloriasPorRep: data.caloriasPorRep ? parseFloat(data.caloriasPorRep) : null,
-      caloriasPorMin: data.caloriasPorMin ? parseFloat(data.caloriasPorMin) : null,
-      videoUrl: data.videoUrl || null,
+      caloriasPorRep,
+      caloriasPorMin,
+      videoUrl,
       createdById: scope === 'coach' ? createdById : null,
       scope,
     },
@@ -51,6 +81,10 @@ export async function updateExercise(id, data, coachId = null) {
   if (ex.scope === 'coach' && ex.createdById !== coachId) {
     throw new ForbiddenError('No puedes editar este ejercicio');
   }
+  if (data.videoUrl !== undefined) assertVideoUrl(data.videoUrl);
+  const nextRep = data.caloriasPorRep !== undefined ? parseCal(data.caloriasPorRep) : ex.caloriasPorRep;
+  const nextMin = data.caloriasPorMin !== undefined ? parseCal(data.caloriasPorMin) : ex.caloriasPorMin;
+  assertCaloriesPair(nextRep, nextMin);
   return prisma.exerciseLibrary.update({
     where: { id },
     data: {
@@ -59,9 +93,9 @@ export async function updateExercise(id, data, coachId = null) {
       instructions: data.instructions !== undefined ? data.instructions : undefined,
       muscleGroup: data.muscleGroup !== undefined ? data.muscleGroup : undefined,
       equipment: data.equipment !== undefined ? data.equipment : undefined,
-      caloriasPorRep: data.caloriasPorRep !== undefined ? (data.caloriasPorRep ? parseFloat(data.caloriasPorRep) : null) : undefined,
-      caloriasPorMin: data.caloriasPorMin !== undefined ? (data.caloriasPorMin ? parseFloat(data.caloriasPorMin) : null) : undefined,
-      videoUrl: data.videoUrl !== undefined ? data.videoUrl : undefined,
+      caloriasPorRep: data.caloriasPorRep !== undefined ? parseCal(data.caloriasPorRep) : undefined,
+      caloriasPorMin: data.caloriasPorMin !== undefined ? parseCal(data.caloriasPorMin) : undefined,
+      videoUrl: data.videoUrl !== undefined ? normVideoUrl(data.videoUrl) : undefined,
     },
   });
 }

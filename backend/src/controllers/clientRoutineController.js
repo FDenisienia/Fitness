@@ -15,9 +15,11 @@ export async function assign(req, res, next) {
   try {
     const coachId = req.user?.coach?.id;
     if (!coachId) return res.status(403).json({ success: false, error: 'No eres coach' });
-    const { clientId, routineId } = req.body;
+    const { clientId, routineId, assignmentDate } = req.body;
     if (!clientId || !routineId) return res.status(400).json({ success: false, error: 'clientId y routineId requeridos' });
-    const assignments = await clientRoutineService.assignRoutine(clientId, routineId, coachId, coachId);
+    const assignments = await clientRoutineService.assignRoutine(clientId, routineId, coachId, coachId, {
+      assignmentDate: typeof assignmentDate === 'string' && assignmentDate.trim() ? assignmentDate.trim() : undefined,
+    });
     res.status(201).json({ success: true, data: assignments });
   } catch (err) {
     next(err);

@@ -18,3 +18,22 @@ export function formatMessageDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
+
+/** Hora corta para filas del listado de conversaciones. */
+export function formatConversationListTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+}

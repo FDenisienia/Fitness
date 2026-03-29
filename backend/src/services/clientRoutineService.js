@@ -1,7 +1,12 @@
 import { prisma } from '../utils/prisma.js';
 import { NotFoundError, ForbiddenError } from '../utils/errors.js';
+import { formatRoutine } from './routineService.js';
 
-export async function assignRoutine(clientId, routineId, coachId, assignedById) {
+/**
+ * @param {{ assignmentDate?: string }} options - Fecha YYYY-MM-DD: inicio de asignación y día en el calendario (PlannedWorkout)
+ */
+export async function assignRoutine(clientId, routineId, coachId, assignedById, options = {}) {
+  const { assignmentDate } = options;
   const [client, routine] = await Promise.all([
     prisma.client.findUnique({ where: { id: clientId } }),
     prisma.routine.findUnique({ where: { id: routineId } }),
@@ -16,14 +21,27 @@ export async function assignRoutine(clientId, routineId, coachId, assignedById) 
   });
   if (existing) throw new ForbiddenError('La rutina ya está asignada a este cliente');
 
-  await prisma.clientRoutine.create({
-    data: {
-      clientId,
-      routineId,
-      assignedById: assignedById || coachId,
-      active: true,
-      startDate: new Date(),
-    },
+  const startDate = assignmentDate ? new Date(assignmentDate) : new Date();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.clientRoutine.create({
+      data: {
+        clientId,
+        routineId,
+        assignedById: assignedById || coachId,
+        active: true,
+        startDate,
+      },
+    });
+    if (assignmentDate) {
+      await tx.plannedWorkout.create({
+        data: {
+          clientId,
+          routineId,
+          date: new Date(assignmentDate),
+        },
+      });
+    }
   });
   return listClientRoutines(clientId, coachId);
 }
@@ -51,7 +69,7 @@ export async function listClientRoutines(clientId, coachId = null) {
     routineId: a.routineId,
     assignedAt: a.assignedAt,
     active: a.active,
-    routine: a.routine,
+    routine: formatRoutine(a.routine),
   }));
 }
 
@@ -65,6 +83,9 @@ export async function unassignRoutine(clientId, routineId, coachId) {
   await prisma.clientRoutine.updateMany({
     where: { clientId, routineId },
     data: { active: false, endDate: new Date() },
+  });
+  await prisma.plannedWorkout.deleteMany({
+    where: { clientId, routineId },
   });
   return { success: true };
 }

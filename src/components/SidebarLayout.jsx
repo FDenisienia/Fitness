@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Nav } from 'react-bootstrap';
+import { Nav, Toast, ToastContainer } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
 import AthlentoLogo from './AthlentoLogo';
 import { getInitials } from '../utils/clientDisplay';
+import { chatApi } from '../api/chat';
+import { formatLoginUnreadNotice, unreadBadgeForNavPath } from '../utils/unreadMessages';
+
+const LOGIN_UNREAD_KEY = 'athlento_login_unread';
 
 const ROLE_LABELS = {
   admin: 'Administrador',
@@ -15,10 +19,7 @@ const ROLE_LABELS = {
 const navItems = {
   admin: [
     { to: '/admin', label: 'Dashboard', exact: true },
-    { to: '/admin/coaches', label: 'Coaches (clientes)' },
-    { to: '/admin/alumnos', label: 'Alumnos' },
     { to: '/admin/usuarios', label: 'Usuarios' },
-    { to: '/admin/rutinas', label: 'Rutinas' },
     { to: '/admin/planes', label: 'Planes y cobros' },
     { to: '/admin/biblioteca-ejercicios', label: 'Biblioteca global' },
     { to: '/admin/consultas', label: 'Soporte / Consultas' }
@@ -26,7 +27,7 @@ const navItems = {
   coach: [
     { to: '/coach', label: 'Dashboard', exact: true },
     { to: '/coach/calendario', label: 'Calendario' },
-    { to: '/coach/alumnos', label: 'Mis alumnos' },
+    { to: '/coach/usuarios', label: 'Usuarios' },
     { to: '/coach/seguimiento', label: 'Seguimiento', requires: 'hasWeightTracking' },
     { to: '/coach/rutinas', label: 'Rutinas' },
     { to: '/coach/biblioteca-ejercicios', label: 'Biblioteca' },
@@ -49,6 +50,22 @@ export default function SidebarLayout({ basePath, role }) {
   const { user, logout } = useAuth();
   const plan = usePlan();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // En viewport ancho el drawer está siempre visible: no marcar aria-hidden (evita avisos de foco).
+  const [sidebarDesktop, setSidebarDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 992px)').matches
+  );
+  const [unreadCounts, setUnreadCounts] = useState(null);
+  const [showLoginToast, setShowLoginToast] = useState(false);
+  const [loginToastBody, setLoginToastBody] = useState('');
+
+  const fetchUnread = useCallback(async () => {
+    try {
+      const { data } = await chatApi.unreadSummary();
+      setUnreadCounts(data);
+    } catch (_) {
+      setUnreadCounts({ coachClientUnread: 0, adminCoachUnread: 0 });
+    }
+  }, []);
 
   let items = navItems[role] || [];
   if (role === 'coach' && plan) {
@@ -58,6 +75,42 @@ export default function SidebarLayout({ basePath, role }) {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    fetchUnread();
+    const t = setInterval(fetchUnread, 45000);
+    const onFocus = () => fetchUnread();
+    const onUnreadEvent = () => fetchUnread();
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('athlento-unread-refresh', onUnreadEvent);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('athlento-unread-refresh', onUnreadEvent);
+    };
+  }, [fetchUnread]);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem(LOGIN_UNREAD_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(LOGIN_UNREAD_KEY);
+    try {
+      const d = JSON.parse(raw);
+      const msg = formatLoginUnreadNotice(role, d);
+      if (msg) {
+        setLoginToastBody(msg);
+        setShowLoginToast(true);
+      }
+    } catch (_) {}
+  }, [role]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 992px)');
+    const onChange = () => setSidebarDesktop(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -104,7 +157,10 @@ export default function SidebarLayout({ basePath, role }) {
         <div className="mobile-header-spacer" aria-hidden="true" />
       </header>
 
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} aria-hidden={!sidebarOpen}>
+      <aside
+        className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}
+        aria-hidden={sidebarDesktop ? false : !sidebarOpen}
+      >
         <div className="sidebar-drawer">
           <div className="sidebar-brand">
             <AthlentoLogo size="sm" />
@@ -126,17 +182,32 @@ export default function SidebarLayout({ basePath, role }) {
               </div>
             </div>
             <nav className="sidebar-nav flex-column" aria-label="Navegación principal">
-              {items.map(({ to, label, exact }) => (
-                <Nav.Link
-                  key={to}
-                  as={Link}
-                  to={to}
-                  className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
-                  onClick={closeSidebar}
-                >
-                  {label}
-                </Nav.Link>
-              ))}
+              {items.map(({ to, label, exact }) => {
+                const badge = unreadBadgeForNavPath(to, role, unreadCounts);
+                const badgeLabel = badge > 99 ? '99+' : String(badge);
+                return (
+                  <Nav.Link
+                    key={to}
+                    as={Link}
+                    to={to}
+                    className={exact ? (location.pathname === to ? 'active' : '') : (location.pathname.startsWith(to) ? 'active' : '')}
+                    onClick={() => {
+                      closeSidebar();
+                      fetchUnread();
+                    }}
+                    aria-label={badge > 0 ? `${label}, ${badge} sin leer` : label}
+                  >
+                    <span className="sidebar-nav-link-inner">
+                      <span>{label}</span>
+                      {badge > 0 && (
+                        <span className="sidebar-nav-badge" title={`${badge} sin leer`} aria-hidden="true">
+                          {badgeLabel}
+                        </span>
+                      )}
+                    </span>
+                  </Nav.Link>
+                );
+              })}
             </nav>
           </div>
           <div className="sidebar-footer">
@@ -148,7 +219,21 @@ export default function SidebarLayout({ basePath, role }) {
           </div>
         </div>
       </aside>
-      <main className="main-content flex-grow-1">
+      <main className="main-content flex-grow-1 position-relative">
+        <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1080 }}>
+          <Toast
+            show={showLoginToast}
+            onClose={() => setShowLoginToast(false)}
+            delay={9000}
+            autohide
+            bg="dark"
+          >
+            <Toast.Header closeButton closeVariant="white">
+              <strong className="me-auto">Mensajes sin leer</strong>
+            </Toast.Header>
+            <Toast.Body className="text-white">{loginToastBody}</Toast.Body>
+          </Toast>
+        </ToastContainer>
         <Outlet />
       </main>
     </div>
