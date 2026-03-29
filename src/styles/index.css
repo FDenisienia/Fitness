@@ -6,6 +6,7 @@
 @import './client-dashboard.css';
 @import './exercise-autocomplete.css';
 @import './landing.css';
+@import './whatsapp-float.css';
 
 /* ===== Animaciones y microinteracciones - SaaS Premium ===== */
 html { scroll-behavior: smooth; }

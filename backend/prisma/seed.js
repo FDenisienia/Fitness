@@ -11,11 +11,10 @@ async function main() {
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@fitcoach.com' },
-    update: { lastPasswordPlain: 'admin123' },
+    update: {},
     create: {
       email: 'admin@fitcoach.com',
-      passwordHash: hash('admin123'),
-      lastPasswordPlain: 'admin123',
+      passwordHash: hash('Admin123'),
       name: 'Admin',
       lastName: 'Sistema',
       role: 'admin',
@@ -25,11 +24,10 @@ async function main() {
 
   const coachUser = await prisma.user.upsert({
     where: { email: 'coach@fitcoach.com' },
-    update: { lastPasswordPlain: 'coach123' },
+    update: {},
     create: {
       email: 'coach@fitcoach.com',
-      passwordHash: hash('coach123'),
-      lastPasswordPlain: 'coach123',
+      passwordHash: hash('Coach123'),
       name: 'Carlos',
       lastName: 'González',
       role: 'coach',
@@ -55,11 +53,10 @@ async function main() {
 
   const client1User = await prisma.user.upsert({
     where: { email: 'cliente1@email.com' },
-    update: { lastPasswordPlain: 'cliente123' },
+    update: {},
     create: {
       email: 'cliente1@email.com',
-      passwordHash: hash('cliente123'),
-      lastPasswordPlain: 'cliente123',
+      passwordHash: hash('Cliente123'),
       name: 'Juan',
       lastName: 'Pérez',
       role: 'cliente',
@@ -69,11 +66,10 @@ async function main() {
 
   const client2User = await prisma.user.upsert({
     where: { email: 'cliente2@email.com' },
-    update: { lastPasswordPlain: 'cliente123' },
+    update: {},
     create: {
       email: 'cliente2@email.com',
-      passwordHash: hash('cliente123'),
-      lastPasswordPlain: 'cliente123',
+      passwordHash: hash('Cliente123'),
       name: 'Ana',
       lastName: 'Martínez',
       role: 'cliente',

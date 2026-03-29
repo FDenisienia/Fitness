@@ -92,33 +92,75 @@ export async function getMyConversationClient(userId) {
   };
 }
 
-/** Coach: solo conversaciones con al menos un mensaje, ordenadas por actividad reciente. */
+/**
+ * Coach: todos los alumnos del coach en bandeja; los que aún no tienen mensajes
+ * aparecen sin conversación hasta el primer envío (el envío hace upsert como siempre).
+ */
 export async function listInboxForCoach(userId) {
   const coach = await getCoachByUserId(userId);
-  const convs = await prisma.conversation.findMany({
-    where: {
-      coachId: coach.id,
-      messages: { some: {} },
-    },
-    include: {
-      client: { include: { user: true } },
-    },
-    orderBy: [{ lastMessageAt: 'desc' }, { updatedAt: 'desc' }],
+  const [clients, convsWithMessages] = await Promise.all([
+    prisma.client.findMany({
+      where: { coachId: coach.id },
+      include: { user: true },
+    }),
+    prisma.conversation.findMany({
+      where: {
+        coachId: coach.id,
+        messages: { some: {} },
+      },
+      include: {
+        client: { include: { user: true } },
+      },
+    }),
+  ]);
+
+  const convByClientId = new Map(convsWithMessages.map((c) => [c.clientId, c]));
+
+  const rows = clients.map((client) => {
+    const conv = convByClientId.get(client.id);
+    const u = client.user;
+    if (conv) {
+      return {
+        clientId: conv.clientId,
+        clientUserId: conv.client.user.id,
+        otherParticipant: {
+          id: conv.client.user.id,
+          name: conv.client.user.name,
+          lastName: conv.client.user.lastName,
+        },
+        conversationId: conv.id,
+        lastMessageAt: conv.lastMessageAt?.toISOString() ?? null,
+        lastMessagePreview: conv.lastMessagePreview,
+        clientUnreadCount: conv.clientUnreadCount,
+        coachUnreadCount: conv.coachUnreadCount,
+      };
+    }
+    return {
+      clientId: client.id,
+      clientUserId: u.id,
+      otherParticipant: {
+        id: u.id,
+        name: u.name,
+        lastName: u.lastName,
+      },
+      conversationId: null,
+      lastMessageAt: null,
+      lastMessagePreview: null,
+      clientUnreadCount: 0,
+      coachUnreadCount: 0,
+    };
   });
-  return convs.map((conv) => ({
-    clientId: conv.clientId,
-    clientUserId: conv.client.user.id,
-    otherParticipant: {
-      id: conv.client.user.id,
-      name: conv.client.user.name,
-      lastName: conv.client.user.lastName,
-    },
-    conversationId: conv.id,
-    lastMessageAt: conv.lastMessageAt?.toISOString() ?? null,
-    lastMessagePreview: conv.lastMessagePreview,
-    clientUnreadCount: conv.clientUnreadCount,
-    coachUnreadCount: conv.coachUnreadCount,
-  }));
+
+  rows.sort((a, b) => {
+    const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+    const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+    if (ta !== tb) return tb - ta;
+    const nameA = [a.otherParticipant?.name, a.otherParticipant?.lastName].filter(Boolean).join(' ').toLowerCase();
+    const nameB = [b.otherParticipant?.name, b.otherParticipant?.lastName].filter(Boolean).join(' ').toLowerCase();
+    return nameA.localeCompare(nameB, 'es');
+  });
+
+  return rows;
 }
 
 async function resolveCoachConversationForList(userId, rawConversationId, rawClientId) {

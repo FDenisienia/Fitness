@@ -1,11 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Card, Table, Button, Modal, Form, Row, Col, Spinner, Alert, Badge } from 'react-bootstrap';
+import { Card, Table, Button, Modal, Form, Row, Col, Spinner, Alert, Badge, InputGroup } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { usePlan } from '../../context/PlanContext';
 import { clientsApi, routinesApi, clientRoutinesApi, plannedWorkoutsApi, usersApi } from '../../api';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
 import { SUBSCRIPTION_PLANS, OBJECTIVES, LEVELS } from '../../data/mockData';
+import { getPasswordPolicyError } from '../../utils/passwordValidation';
+
+function EyeToggleIcon({ visible }) {
+  if (visible) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 function clientDisplay(c) {
   const u = c.user || c;
@@ -37,6 +55,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newAlumno, setNewAlumno] = useState({
@@ -94,6 +113,11 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
       alert('Indica el email del alumno (será su usuario para iniciar sesión).');
       return;
     }
+    const pwErr = getPasswordPolicyError(newAlumno.password);
+    if (pwErr) {
+      alert(pwErr);
+      return;
+    }
     if (atLimit) { alert(`Tu plan permite máx. ${plan.maxAlumnos} alumnos.`); return; }
     setSaving(true);
     try {
@@ -101,7 +125,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
         name: newAlumno.name,
         lastName: newAlumno.lastName,
         email: newAlumno.email,
-        password: newAlumno.password || 'cliente123',
+        password: newAlumno.password.trim(),
         age: newAlumno.age || null,
         objective: newAlumno.objective || null,
         objectiveDescription: newAlumno.objective === 'personalizado' ? newAlumno.objectiveDescription?.trim() || null : null,
@@ -118,6 +142,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
         level: 'principiante',
       });
       setShowCreate(false);
+      setShowCreatePassword(false);
       loadData();
     } catch (err) {
       alert(err.message || 'Error al crear alumno');
@@ -175,7 +200,6 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     setPwTarget({
       userId: uid,
       label: `${d.name} ${d.lastName}`.trim() || d.email,
-      lastKnownPassword: c.user?.lastPasswordPlain ?? null,
     });
   };
 
@@ -444,7 +468,6 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
           onHide={() => !pwSubmitting && setPwTarget(null)}
           title="Resetear contraseña"
           targetLabel={pwTarget?.label}
-          lastKnownPassword={pwTarget?.lastKnownPassword ?? null}
           submitLabel="Guardar contraseña"
           submitting={pwSubmitting}
           onSubmit={submitClientPassword}
@@ -475,7 +498,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
               {atLimit && <span className="text-danger ms-1">· Límite alcanzado</span>}
             </p>
           </div>
-          <Button onClick={() => setShowCreate(true)} className="btn-primary" disabled={atLimit}>
+          <Button onClick={() => { setShowCreate(true); setShowCreatePassword(false); }} className="btn-primary" disabled={atLimit}>
             Crear alumno {atLimit && `(límite)`}
           </Button>
         </div>
@@ -486,7 +509,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
             <strong>{myClients.length} / {maxDisplay}</strong> alumnos usados
             {atLimit && <span className="text-danger ms-1">· Límite alcanzado</span>}
           </p>
-          <Button onClick={() => setShowCreate(true)} className="btn-primary" disabled={atLimit}>
+          <Button onClick={() => { setShowCreate(true); setShowCreatePassword(false); }} className="btn-primary" disabled={atLimit}>
             Crear alumno {atLimit && `(límite)`}
           </Button>
         </div>
@@ -568,7 +591,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showCreate} onHide={() => setShowCreate(false)}>
+      <Modal show={showCreate} onHide={() => { setShowCreate(false); setShowCreatePassword(false); }}>
         <Modal.Header closeButton><Modal.Title>Crear alumno</Modal.Title></Modal.Header>
         <Modal.Body>
           <Row>
@@ -587,7 +610,31 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
             />
             <Form.Text className="text-muted">El alumno usará este email para entrar a la app.</Form.Text>
           </Form.Group>
-          <Form.Group className="mb-3"><Form.Label>Contraseña inicial</Form.Label><Form.Control type="password" value={newAlumno.password} onChange={e => setNewAlumno(n => ({ ...n, password: e.target.value }))} placeholder="Opcional (default: cliente123)" /></Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Contraseña inicial</Form.Label>
+            <InputGroup>
+              <Form.Control
+                type={showCreatePassword ? 'text' : 'password'}
+                value={newAlumno.password}
+                onChange={(e) => setNewAlumno((n) => ({ ...n, password: e.target.value }))}
+                placeholder="Mín. 8 caracteres, mayúscula y número"
+                autoComplete="new-password"
+                required
+              />
+              <Button
+                type="button"
+                variant="outline-secondary"
+                className="d-flex align-items-center px-3"
+                onClick={() => setShowCreatePassword((v) => !v)}
+                disabled={saving}
+                aria-label={showCreatePassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                title={showCreatePassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                <EyeToggleIcon visible={showCreatePassword} />
+              </Button>
+            </InputGroup>
+            <Form.Text className="text-muted">Obligatoria. Mínimo 8 caracteres, una mayúscula y un número.</Form.Text>
+          </Form.Group>
           <Row>
             <Col md={4}><Form.Group className="mb-3"><Form.Label>Edad</Form.Label><Form.Control type="number" value={newAlumno.age} onChange={e => setNewAlumno(n => ({ ...n, age: e.target.value }))} /></Form.Group></Col>
             <Col md={4}><Form.Group className="mb-3"><Form.Label>Objetivo</Form.Label><Form.Select value={newAlumno.objective} onChange={(e) => { const v = e.target.value; setNewAlumno((n) => ({ ...n, objective: v, ...(v !== 'personalizado' ? { objectiveDescription: '' } : {}) })); }}><option value="">Seleccionar</option>{OBJECTIVES.map(o => <option key={o} value={o}>{o}</option>)}</Form.Select></Form.Group></Col>
@@ -607,7 +654,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowCreate(false)}>Cancelar</Button>
+          <Button variant="secondary" onClick={() => { setShowCreate(false); setShowCreatePassword(false); }}>Cancelar</Button>
           <Button className="btn-primary" onClick={createAlumno} disabled={saving}>{saving ? 'Creando...' : 'Crear'}</Button>
         </Modal.Footer>
       </Modal>
@@ -617,7 +664,6 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
         onHide={() => !pwSubmitting && setPwTarget(null)}
         title="Resetear contraseña"
         targetLabel={pwTarget?.label}
-        lastKnownPassword={pwTarget?.lastKnownPassword ?? null}
         submitLabel="Guardar contraseña"
         submitting={pwSubmitting}
         onSubmit={submitClientPassword}

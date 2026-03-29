@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../utils/prisma.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
+import { assertPasswordPolicy } from '../utils/passwordPolicy.js';
 import * as userDeletionService from './userDeletionService.js';
 
 const SALT_ROUNDS = 10;
@@ -22,7 +23,7 @@ export async function listClientsByCoach(coachId, options = {}) {
   const expandSet = new Set(parseExpandList(options.expand));
 
   const include = {
-    user: { select: { id: true, email: true, name: true, lastName: true, status: true, lastPasswordPlain: true } },
+    user: { select: { id: true, email: true, name: true, lastName: true, status: true } },
     coach: { include: { user: { select: { id: true } } } },
   };
 
@@ -103,13 +104,16 @@ export async function createClient(coachId, data) {
   });
   if (existing) throw new BadRequestError('Ya existe un usuario con ese email');
 
-  const plain = (data.password && String(data.password).trim()) || 'cliente123';
-  const passwordHash = await bcrypt.hash(plain, 10);
+  const plain = data.password != null ? String(data.password).trim() : '';
+  if (!plain) {
+    throw new BadRequestError('La contraseña es obligatoria');
+  }
+  assertPasswordPolicy(plain);
+  const passwordHash = await bcrypt.hash(plain, SALT_ROUNDS);
   const user = await prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
       passwordHash,
-      lastPasswordPlain: plain,
       name: data.name,
       lastName: data.lastName || null,
       role: 'cliente',
@@ -213,7 +217,6 @@ function formatClient(c) {
       name: c.user.name,
       lastName: c.user.lastName,
       status: c.user.status,
-      lastPasswordPlain: c.user.lastPasswordPlain ?? null,
     } : undefined,
     coach: c.coach,
   };

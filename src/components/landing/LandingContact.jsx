@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { PRICING_PLANS } from '../../data/landingData';
+import { contactApi } from '../../api/contact';
 
 export default function LandingContact() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -10,6 +11,7 @@ export default function LandingContact() {
   const [form, setForm] = useState({ name: '', email: '', message: '', plan: '' });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (planParam) {
@@ -30,14 +32,19 @@ export default function LandingContact() {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
     setSending(true);
+    setSubmitError('');
     try {
-      // TODO: conectar con API de contacto cuando exista (incluir form.plan)
-      await new Promise((r) => setTimeout(r, 800));
+      await contactApi.submit({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        message: form.message.trim(),
+        plan: form.plan.trim(),
+      });
       setSent(true);
       setForm({ name: '', email: '', message: '', plan: '' });
       setSearchParams({});
     } catch (err) {
-      console.error(err);
+      setSubmitError(err.message || 'No se pudo enviar el mensaje. Probá de nuevo más tarde.');
     } finally {
       setSending(false);
     }
@@ -86,6 +93,11 @@ export default function LandingContact() {
                 </div>
               ) : (
                 <Form onSubmit={handleSubmit}>
+                  {submitError ? (
+                    <Alert variant="danger" className="mb-3" onClose={() => setSubmitError('')} dismissible>
+                      {submitError}
+                    </Alert>
+                  ) : null}
                   <Form.Group className="mb-3">
                     <Form.Label>Plan de interés</Form.Label>
                     <Form.Select

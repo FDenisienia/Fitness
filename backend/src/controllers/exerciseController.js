@@ -12,7 +12,11 @@ export async function list(req, res, next) {
 
 export async function getById(req, res, next) {
   try {
-    const exercise = await exerciseService.getExerciseById(req.params.id);
+    const exercise = await exerciseService.getExerciseById(req.params.id, {
+      role: req.userRole,
+      coachId: req.user?.coach?.id ?? null,
+      clientCoachId: req.user?.client?.coachId ?? null,
+    });
     res.json({ success: true, data: exercise });
   } catch (err) {
     next(err);

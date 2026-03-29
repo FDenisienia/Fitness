@@ -33,3 +33,10 @@ export class BadRequestError extends AppError {
     this.name = 'BadRequestError';
   }
 }
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = 'Servicio temporalmente no disponible') {
+    super(message, 503);
+    this.name = 'ServiceUnavailableError';
+  }
+}

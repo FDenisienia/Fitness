@@ -49,6 +49,8 @@ export default function ConversationItem({
         </div>
         {conv.lastMessagePreview ? (
           <p className="messaging-conv-preview">{conv.lastMessagePreview}</p>
+        ) : conv.lastMessageAt == null && !conv.conversationId ? (
+          <p className="messaging-conv-preview messaging-conv-preview--empty">Sin mensajes aún — tocá para escribir</p>
         ) : null}
       </div>
       {unread > 0 && (

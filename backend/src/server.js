@@ -1,15 +1,20 @@
-import { config } from './config/index.js';
+import { config, validateProductionConfig } from './config/index.js';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+
+validateProductionConfig();
 
 const app = express();
 
 // Necesario cuando la API está detrás de un proxy (Docker, Railway, etc.)
 // para que express-rate-limit use correctamente X-Forwarded-For
 app.set('trust proxy', 1);
+
+app.use(helmet());
 
 app.use(cors({
   origin: (origin, cb) => {
@@ -24,9 +29,8 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
-// Limitación solo en producción (Railway suele tener NODE_ENV=production).
-// En local evita 429 en login y muchas peticiones al cargar la app.
-if (process.env.NODE_ENV === 'production') {
+// Limitación global en producción o si FORCE_RATE_LIMIT=1 (desarrollo con datos reales).
+if (config.nodeEnv === 'production' || config.forceRateLimit) {
   app.use(
     '/api',
     rateLimit({

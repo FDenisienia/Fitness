@@ -4,6 +4,7 @@ import { prisma } from '../utils/prisma.js';
 import { config } from '../config/index.js';
 import { UnauthorizedError, BadRequestError } from '../utils/errors.js';
 import { isUserBlocked } from '../utils/userStatus.js';
+import { assertPasswordPolicy } from '../utils/passwordPolicy.js';
 
 const SALT_ROUNDS = 10;
 
@@ -12,14 +13,16 @@ export async function register(data) {
     where: { email: data.email.toLowerCase() },
   });
   if (existing) {
-    throw new BadRequestError('Ya existe un usuario con ese email');
+    throw new BadRequestError(
+      'No se pudo completar el registro. Si ya tenés cuenta, probá iniciar sesión.'
+    );
   }
+  assertPasswordPolicy(data.password);
   const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
   const user = await prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
       passwordHash,
-      lastPasswordPlain: data.password,
       name: data.name,
       lastName: data.lastName || null,
       role: 'cliente',
@@ -66,7 +69,7 @@ export async function login(email, password) {
       throw new UnauthorizedError(BLOCKED_ERROR);
     }
   }
-  const { passwordHash: _, lastPasswordPlain: __lp, ...safeUser } = user;
+  const { passwordHash: _, ...safeUser } = user;
   return { user: formatUser(safeUser), token: generateToken(safeUser) };
 }
 
@@ -97,7 +100,7 @@ export async function getProfile(userId) {
       throw new UnauthorizedError(BLOCKED_ERROR);
     }
   }
-  const { passwordHash: _, lastPasswordPlain: __lp, ...safe } = user;
+  const { passwordHash: _, ...safe } = user;
   return formatUser(safe);
 }
 

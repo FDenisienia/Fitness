@@ -28,8 +28,6 @@ export default function ChangePasswordModal({
   onHide,
   title = 'Cambiar contraseña',
   targetLabel,
-  /** Última contraseña guardada en gestión (creación o cambio desde admin/coach). Si no hay, no se puede mostrar. */
-  lastKnownPassword = null,
   submitLabel = 'Guardar',
   onSubmit,
   submitting = false,
@@ -39,7 +37,6 @@ export default function ChangePasswordModal({
   const [localError, setLocalError] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showCurrent, setShowCurrent] = useState(false);
 
   useEffect(() => {
     if (!show) {
@@ -48,7 +45,6 @@ export default function ChangePasswordModal({
       setLocalError('');
       setShowNew(false);
       setShowConfirm(false);
-      setShowCurrent(false);
     }
   }, [show]);
 
@@ -80,39 +76,6 @@ export default function ChangePasswordModal({
               {localError}
             </Alert>
           )}
-          <Form.Group className="mb-3">
-            <Form.Label>Contraseña actual (registrada)</Form.Label>
-            {lastKnownPassword ? (
-              <InputGroup>
-                <Form.Control
-                  className="border-end-0 bg-light"
-                  readOnly
-                  type={showCurrent ? 'text' : 'password'}
-                  value={lastKnownPassword}
-                  tabIndex={-1}
-                />
-                <Button
-                  type="button"
-                  variant="outline-secondary"
-                  className="border-start-0 d-flex align-items-center px-3"
-                  onClick={() => setShowCurrent((v) => !v)}
-                  disabled={submitting}
-                  aria-label={showCurrent ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
-                  title={showCurrent ? 'Ocultar' : 'Mostrar'}
-                >
-                  <EyeToggleIcon visible={showCurrent} />
-                </Button>
-              </InputGroup>
-            ) : (
-              <Alert variant="light" className="mb-0 py-2 small text-muted border">
-                Sin dato guardado: aparecerá tras crear el usuario o cambiar la contraseña desde este panel.
-              </Alert>
-            )}
-            <Form.Text className="text-muted">
-              No se puede deducir la contraseña solo a partir del hash; aquí se muestra la última que guardó la
-              app al crear o restablecer.
-            </Form.Text>
-          </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Nueva contraseña</Form.Label>
             <InputGroup>

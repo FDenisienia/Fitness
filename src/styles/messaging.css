@@ -311,6 +311,11 @@
   overflow: hidden;
 }
 
+.messaging-conv-preview--empty {
+  color: rgba(255, 255, 255, 0.38);
+  font-style: italic;
+}
+
 .messaging-conv-unread {
   position: absolute;
   top: 0.55rem;

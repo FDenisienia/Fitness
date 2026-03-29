@@ -17,8 +17,8 @@ export const patchPasswordValidator = [
 export const registerValidator = [
   body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('La contraseña debe tener al menos 6 caracteres'),
+    .isLength({ min: 8 })
+    .withMessage('La contraseña debe tener al menos 8 caracteres'),
   body('name').trim().notEmpty().withMessage('Nombre requerido'),
   body('lastName').optional().trim(),
 ];

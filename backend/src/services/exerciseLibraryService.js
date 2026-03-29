@@ -47,9 +47,20 @@ export async function listExercises(filters = {}, coachId = null) {
   return exercises;
 }
 
-export async function getExerciseById(id) {
+/**
+ * @param {string} id
+ * @param {{ role: string, coachId?: string | null, clientCoachId?: string | null }} viewer
+ */
+export async function getExerciseById(id, viewer) {
   const ex = await prisma.exerciseLibrary.findUnique({ where: { id } });
   if (!ex) throw new NotFoundError('Ejercicio');
+  if (ex.scope === 'coach' && ex.createdById) {
+    const { role, coachId, clientCoachId } = viewer;
+    if (role === 'admin') return ex;
+    if (role === 'coach' && coachId === ex.createdById) return ex;
+    if (role === 'cliente' && clientCoachId === ex.createdById) return ex;
+    throw new ForbiddenError('No tienes acceso a este ejercicio');
+  }
   return ex;
 }
 

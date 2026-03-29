@@ -140,7 +140,7 @@ export default function LoginPage() {
           </Card.Body>
         </Card>
         <p className="text-center mt-3 text-muted small">
-          Demo: admin@fitcoach.com / admin123 | coach@fitcoach.com / coach123 | cliente1@email.com / cliente123
+          Demo (solo entorno local tras seed): admin@fitcoach.com / Admin123 | coach@fitcoach.com / Coach123 | cliente1@email.com / Cliente123
         </p>
       </Container>
     </div>

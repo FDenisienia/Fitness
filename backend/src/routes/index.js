@@ -11,9 +11,11 @@ import weightLogRoutes from './weightLogRoutes.js';
 import plannedWorkoutRoutes from './plannedWorkoutRoutes.js';
 import statsRoutes from './statsRoutes.js';
 import chatRoutes from './chatRoutes.js';
+import contactRoutes from './contactRoutes.js';
 
 const router = Router();
 
+router.use('/public/contact', contactRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/coaches', coachRoutes);

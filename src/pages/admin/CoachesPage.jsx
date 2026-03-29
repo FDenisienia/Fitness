@@ -8,6 +8,7 @@ import {
   hardDeleteCoachAsAdmin,
 } from '../../services/coachAdminService';
 import { SUBSCRIPTION_PLANS } from '../../data/mockData';
+import { getPasswordPolicyError } from '../../utils/passwordValidation';
 
 export default function CoachesPage({ embedded = false }) {
   const [coaches, setCoaches] = useState([]);
@@ -78,13 +79,18 @@ export default function CoachesPage({ embedded = false }) {
 
   const createCoach = async () => {
     if (!newCoach.email || !newCoach.password) return;
+    const pwErr = getPasswordPolicyError(newCoach.password);
+    if (pwErr) {
+      alert(pwErr);
+      return;
+    }
     setCreating(true);
     try {
       await coachesApi.create({
         name: newCoach.name,
         lastName: newCoach.lastName,
         email: newCoach.email,
-        password: newCoach.password,
+        password: newCoach.password.trim(),
         specialty: newCoach.specialty,
         subscriptionPlan: newCoach.subscriptionPlan,
       });
@@ -161,7 +167,6 @@ export default function CoachesPage({ embedded = false }) {
     setPwTarget({
       userId: uid,
       label: `${c.name || ''} ${c.lastName || ''}`.trim() || c.email,
-      lastKnownPassword: c.user?.lastPasswordPlain ?? null,
     });
   };
 
@@ -301,7 +306,11 @@ export default function CoachesPage({ embedded = false }) {
           <Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={newCoach.name} onChange={e => setNewCoach(n => ({ ...n, name: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Apellido</Form.Label><Form.Control value={newCoach.lastName} onChange={e => setNewCoach(n => ({ ...n, lastName: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={newCoach.email} onChange={e => setNewCoach(n => ({ ...n, email: e.target.value }))} /></Form.Group>
-          <Form.Group className="mb-3"><Form.Label>Contraseña</Form.Label><Form.Control type="password" value={newCoach.password} onChange={e => setNewCoach(n => ({ ...n, password: e.target.value }))} /></Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Contraseña</Form.Label>
+            <Form.Control type="password" value={newCoach.password} onChange={e => setNewCoach(n => ({ ...n, password: e.target.value }))} autoComplete="new-password" />
+            <Form.Text className="text-muted">Mín. 8 caracteres, una mayúscula y un número.</Form.Text>
+          </Form.Group>
           <Form.Group className="mb-3"><Form.Label>Especialidad</Form.Label><Form.Control value={newCoach.specialty} onChange={e => setNewCoach(n => ({ ...n, specialty: e.target.value }))} placeholder="Ej: Fuerza" /></Form.Group>
           <Form.Group><Form.Label>Plan de suscripción</Form.Label><Form.Select value={newCoach.subscriptionPlan} onChange={e => setNewCoach(n => ({ ...n, subscriptionPlan: e.target.value }))}>{Object.entries(SUBSCRIPTION_PLANS).map(([k, p]) => <option key={k} value={k}>{p.name} - {p.id === 'personalizado' ? 'Personalizado' : `USD ${Number(p.price).toFixed(2)}/mes`} (máx {p.maxAlumnos === 999 ? '∞' : p.maxAlumnos} alumnos)</option>)}</Form.Select></Form.Group>
         </Modal.Body>
@@ -357,7 +366,6 @@ export default function CoachesPage({ embedded = false }) {
         onHide={() => !pwSubmitting && setPwTarget(null)}
         title="Cambiar contraseña"
         targetLabel={pwTarget?.label}
-        lastKnownPassword={pwTarget?.lastKnownPassword ?? null}
         submitLabel="Cambiar contraseña"
         submitting={pwSubmitting}
         onSubmit={submitCoachPassword}

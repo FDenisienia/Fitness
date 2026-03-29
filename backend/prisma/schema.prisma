@@ -13,8 +13,6 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String  @map("password_hash")
-  /// Última contraseña en claro (solo gestión interna: se guarda al crear usuario o al cambiar desde admin/coach). No exponer al cliente en login/perfil.
-  lastPasswordPlain String? @map("last_password_plain") @db.Text
   /// Se incrementa al cambiar contraseña para invalidar JWTs previos (campo `tv` en el token).
   tokenVersion Int     @default(0) @map("token_version")
   name         String

@@ -5,6 +5,7 @@ import { PlanProvider } from './context/PlanContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PlanGuard } from './components/PlanGuard';
 import PublicLayout from './components/PublicLayout';
+import WhatsAppFloatButton from './components/WhatsAppFloatButton';
 import SidebarLayout from './components/SidebarLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 
@@ -114,6 +115,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </Suspense>
+      <WhatsAppFloatButton />
       </PlanProvider>
     </AuthProvider>
   );

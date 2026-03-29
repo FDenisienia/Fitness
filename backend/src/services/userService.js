@@ -120,7 +120,6 @@ export async function updateUserPassword(actor, targetUserId, { password }) {
     where: { id: targetUserId },
     data: {
       passwordHash,
-      lastPasswordPlain: rawPassword,
       tokenVersion: { increment: 1 },
     },
   });
@@ -164,7 +163,6 @@ function formatCoachUserForAdmin(u, activeByCoach) {
     clientsCount: totalClients,
     activeClientsCount: activeClients,
     routinesCount: c?._count?.routines ?? 0,
-    lastPasswordPlain: u.lastPasswordPlain ?? null,
   };
 }
 
@@ -185,6 +183,5 @@ function formatClientUserForCoach(u) {
     objective: cl?.objective ?? null,
     objectiveDescription: cl?.objectiveDescription ?? null,
     level: cl?.level ?? null,
-    lastPasswordPlain: u.lastPasswordPlain ?? null,
   };
 }
