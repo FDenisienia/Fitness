@@ -32,6 +32,7 @@ function clientDisplay(c) {
     id: c.id,
     name: u.name,
     lastName: u.lastName,
+    username: u.username,
     email: u.email,
     age: c.age,
     objective: c.objective,
@@ -59,6 +60,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
   const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newAlumno, setNewAlumno] = useState({
+    username: '',
     name: '',
     lastName: '',
     email: '',
@@ -109,8 +111,8 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
       alert('Indica el nombre del alumno.');
       return;
     }
-    if (!newAlumno.email?.trim()) {
-      alert('Indica el email del alumno (será su usuario para iniciar sesión).');
+    if (!newAlumno.username?.trim()) {
+      alert('Indica el nombre de usuario del alumno (lo usará para iniciar sesión).');
       return;
     }
     const pwErr = getPasswordPolicyError(newAlumno.password);
@@ -122,9 +124,10 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     setSaving(true);
     try {
       await clientsApi.create({
+        username: newAlumno.username.trim().toLowerCase(),
         name: newAlumno.name,
         lastName: newAlumno.lastName,
-        email: newAlumno.email,
+        email: newAlumno.email?.trim() || null,
         password: newAlumno.password.trim(),
         age: newAlumno.age || null,
         objective: newAlumno.objective || null,
@@ -132,6 +135,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
         level: newAlumno.level || 'principiante',
       });
       setNewAlumno({
+        username: '',
         name: '',
         lastName: '',
         email: '',
@@ -155,9 +159,10 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     const d = clientDisplay(c);
     setEditingAlumno(c);
     setEditForm({
+      username: d.username || '',
       name: d.name,
       lastName: d.lastName,
-      email: d.email,
+      email: d.email || '',
       age: d.age || '',
       objective: d.objective || '',
       objectiveDescription: d.objectiveDescription || '',
@@ -171,6 +176,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     setSaving(true);
     try {
       await clientsApi.update(editingAlumno.id, {
+        username: editForm.username,
         name: editForm.name,
         lastName: editForm.lastName,
         email: editForm.email,
@@ -199,7 +205,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
     const d = clientDisplay(c);
     setPwTarget({
       userId: uid,
-      label: `${d.name} ${d.lastName}`.trim() || d.email,
+      label: `${d.name} ${d.lastName}`.trim() || d.username || d.email,
     });
   };
 
@@ -334,7 +340,8 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
             </div>
           </Card.Header>
           <Card.Body>
-            <p><strong>Email:</strong> {d.email}</p>
+            <p><strong>Usuario:</strong> {d.username || '—'}</p>
+            <p><strong>Email:</strong> {d.email || '—'}</p>
             <p><strong>Objetivo:</strong> {d.objective ? d.objective.charAt(0).toUpperCase() + d.objective.slice(1) : '-'}</p>
             {d.objective === 'personalizado' && d.objectiveDescription && (
               <p className="mb-2">
@@ -434,11 +441,12 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
         <Modal show={showEdit} onHide={() => setShowEdit(false)}>
           <Modal.Header closeButton><Modal.Title>Editar alumno</Modal.Title></Modal.Header>
           <Modal.Body>
+            <Form.Group className="mb-3"><Form.Label>Nombre de usuario</Form.Label><Form.Control value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} autoComplete="off" /></Form.Group>
             <Row>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></Form.Group></Col>
               <Col md={6}><Form.Group className="mb-3"><Form.Label>Apellido</Form.Label><Form.Control value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} /></Form.Group></Col>
             </Row>
-            <Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
+            <Form.Group className="mb-3"><Form.Label>Email (opcional)</Form.Label><Form.Control type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
             <Row>
               <Col md={4}><Form.Group className="mb-3"><Form.Label>Edad</Form.Label><Form.Control type="number" value={editForm.age} onChange={e => setEditForm(f => ({ ...f, age: e.target.value }))} /></Form.Group></Col>
               <Col md={4}><Form.Group className="mb-3"><Form.Label>Objetivo</Form.Label><Form.Select value={editForm.objective} onChange={(e) => { const v = e.target.value; setEditForm((f) => ({ ...f, objective: v, ...(v !== 'personalizado' ? { objectiveDescription: '' } : {}) })); }}><option value="">Seleccionar</option>{OBJECTIVES.map(o => <option key={o} value={o}>{o}</option>)}</Form.Select></Form.Group></Col>
@@ -521,6 +529,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
           <thead>
             <tr>
               <th>Alumno</th>
+              <th>Usuario</th>
               <th>Email</th>
               <th>Estado</th>
               <th>Objetivo</th>
@@ -535,7 +544,8 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
               return (
                 <tr key={c.id}>
                   <td>{d.name} {d.lastName}</td>
-                  <td>{d.email}</td>
+                  <td>{d.username || '—'}</td>
+                  <td>{d.email || '—'}</td>
                   <td>
                     <Badge bg={d.active ? 'success' : 'secondary'}>
                       {d.active ? 'Activo' : 'Inactivo'}
@@ -562,11 +572,12 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
       <Modal show={showEdit} onHide={() => setShowEdit(false)}>
         <Modal.Header closeButton><Modal.Title>Editar alumno</Modal.Title></Modal.Header>
         <Modal.Body>
+          <Form.Group className="mb-3"><Form.Label>Nombre de usuario</Form.Label><Form.Control value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} autoComplete="off" /></Form.Group>
           <Row>
             <Col md={6}><Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></Form.Group></Col>
             <Col md={6}><Form.Group className="mb-3"><Form.Label>Apellido</Form.Label><Form.Control value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} /></Form.Group></Col>
           </Row>
-          <Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Email (opcional)</Form.Label><Form.Control type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
           <Row>
             <Col md={4}><Form.Group className="mb-3"><Form.Label>Edad</Form.Label><Form.Control type="number" value={editForm.age} onChange={e => setEditForm(f => ({ ...f, age: e.target.value }))} /></Form.Group></Col>
             <Col md={4}><Form.Group className="mb-3"><Form.Label>Objetivo</Form.Label><Form.Select value={editForm.objective} onChange={(e) => { const v = e.target.value; setEditForm((f) => ({ ...f, objective: v, ...(v !== 'personalizado' ? { objectiveDescription: '' } : {}) })); }}><option value="">Seleccionar</option>{OBJECTIVES.map(o => <option key={o} value={o}>{o}</option>)}</Form.Select></Form.Group></Col>
@@ -594,21 +605,30 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
       <Modal show={showCreate} onHide={() => { setShowCreate(false); setShowCreatePassword(false); }}>
         <Modal.Header closeButton><Modal.Title>Crear alumno</Modal.Title></Modal.Header>
         <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Nombre de usuario</Form.Label>
+            <Form.Control
+              required
+              autoComplete="off"
+              placeholder="ej: juan_perez"
+              value={newAlumno.username}
+              onChange={e => setNewAlumno(n => ({ ...n, username: e.target.value }))}
+            />
+            <Form.Text className="text-muted">Letras minúsculas, números, guion o guion bajo. Lo usará para iniciar sesión.</Form.Text>
+          </Form.Group>
           <Row>
             <Col md={6}><Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={newAlumno.name} onChange={e => setNewAlumno(n => ({ ...n, name: e.target.value }))} /></Form.Group></Col>
             <Col md={6}><Form.Group className="mb-3"><Form.Label>Apellido</Form.Label><Form.Control value={newAlumno.lastName} onChange={e => setNewAlumno(n => ({ ...n, lastName: e.target.value }))} /></Form.Group></Col>
           </Row>
           <Form.Group className="mb-3">
-            <Form.Label>Email</Form.Label>
+            <Form.Label>Email (opcional)</Form.Label>
             <Form.Control
               type="email"
-              required
               autoComplete="email"
               placeholder="ej: alumno@email.com"
               value={newAlumno.email}
               onChange={e => setNewAlumno(n => ({ ...n, email: e.target.value }))}
             />
-            <Form.Text className="text-muted">El alumno usará este email para entrar a la app.</Form.Text>
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Contraseña inicial</Form.Label>

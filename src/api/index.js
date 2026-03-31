@@ -11,3 +11,4 @@ export { clientRoutinesApi } from './clientRoutines.js';
 export { statsApi } from './stats.js';
 export { chatApi } from './chat.js';
 export { contactApi } from './contact.js';
+export { adminApi } from './admin.js';

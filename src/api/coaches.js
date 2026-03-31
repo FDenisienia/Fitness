@@ -1,10 +1,10 @@
 import { api } from './client.js';
 
 export const coachesApi = {
-  list: () => api.get('/coaches'),
-  getById: (id) => api.get(`/coaches/${id}`),
+  list: () => api.get('/admin/coaches'),
+  getById: (id) => api.get(`/admin/coaches/${id}`),
   create: (data) => api.post('/coaches', data),
-  update: (id, data) => api.put(`/coaches/${id}`, data),
+  update: (id, data) => api.put(`/admin/coaches/${id}`, data),
   deactivate: (id) => api.post(`/coaches/${id}/deactivate`, {}),
   activate: (id) => api.post(`/coaches/${id}/activate`, {}),
   /** Eliminación dura (cascada). */

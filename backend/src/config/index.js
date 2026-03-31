@@ -10,6 +10,11 @@ const rateLimitWindowMs = parseInt(
 const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '400', 10);
 
 const contactSmtpPort = parseInt(process.env.CONTACT_SMTP_PORT || '465', 10);
+const contactSmtpUser = (process.env.CONTACT_SMTP_USER || '').trim();
+const contactMailToEnv = (process.env.CONTACT_MAIL_TO || '').trim();
+/** Bandeja del formulario de contacto: explícita, o la misma cuenta SMTP, o fallback histórico. */
+const contactMailTo =
+  contactMailToEnv || contactSmtpUser || 'athlento.app@gmail.com';
 
 const DEV_JWT_PLACEHOLDER = 'dev-secret-change-me';
 
@@ -25,11 +30,10 @@ export const config = {
   /** Aplicar rate limit global /api también en desarrollo (útil con datos reales). */
   forceRateLimit:
     process.env.FORCE_RATE_LIMIT === '1' || String(process.env.FORCE_RATE_LIMIT).toLowerCase() === 'true',
-  /** Formulario de contacto landing → bandeja (por defecto athlento.app@gmail.com) */
-  contactMailTo: (process.env.CONTACT_MAIL_TO || 'athlento.app@gmail.com').trim(),
+  contactMailTo,
   contactSmtpHost: (process.env.CONTACT_SMTP_HOST || 'smtp.gmail.com').trim(),
   contactSmtpPort: Number.isFinite(contactSmtpPort) && contactSmtpPort > 0 ? contactSmtpPort : 465,
-  contactSmtpUser: (process.env.CONTACT_SMTP_USER || '').trim(),
+  contactSmtpUser,
   contactSmtpPass: (process.env.CONTACT_SMTP_PASS || '').trim(),
 };
 

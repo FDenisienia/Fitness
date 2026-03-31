@@ -23,15 +23,32 @@ function getToken() {
 }
 
 async function request(endpoint, options = {}) {
+  const { timeoutMs = 0, ...fetchOptions } = options;
   const url = `${API_URL}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...fetchOptions.headers,
   };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(url, { ...options, headers });
+  const init = { ...fetchOptions, headers };
+  if (timeoutMs > 0 && typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    init.signal = AbortSignal.timeout(timeoutMs);
+  }
+
+  let res;
+  try {
+    res = await fetch(url, init);
+  } catch (e) {
+    const name = e?.name || '';
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      throw new Error(
+        'La petición tardó demasiado. Si era el contacto, el servidor puede estar bloqueando el envío por SMTP o la API no responde.'
+      );
+    }
+    throw e;
+  }
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
@@ -44,10 +61,13 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  get: (path) => request(path, { method: 'GET' }),
-  post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
-  put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
-  patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: (path) => request(path, { method: 'DELETE' }),
+  get: (path, reqOpts) => request(path, { method: 'GET', ...reqOpts }),
+  post: (path, body, reqOpts) =>
+    request(path, { method: 'POST', body: JSON.stringify(body), ...reqOpts }),
+  put: (path, body, reqOpts) =>
+    request(path, { method: 'PUT', body: JSON.stringify(body), ...reqOpts }),
+  patch: (path, body, reqOpts) =>
+    request(path, { method: 'PATCH', body: JSON.stringify(body), ...reqOpts }),
+  delete: (path, reqOpts) => request(path, { method: 'DELETE', ...reqOpts }),
 };
 

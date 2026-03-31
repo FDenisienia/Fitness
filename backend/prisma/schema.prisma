@@ -11,7 +11,10 @@ datasource db {
 // ===== USUARIOS Y ROLES =====
 model User {
   id           String   @id @default(cuid())
-  email        String   @unique
+  /// Único global; login solo con username (minúsculas al persistir).
+  username     String   @unique
+  /// Obligatorio para coaches y admin; NULL permitido para clientes sin correo.
+  email        String?  @unique
   passwordHash String  @map("password_hash")
   /// Se incrementa al cambiar contraseña para invalidar JWTs previos (campo `tv` en el token).
   tokenVersion Int     @default(0) @map("token_version")

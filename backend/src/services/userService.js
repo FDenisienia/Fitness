@@ -6,17 +6,9 @@ import { assertPasswordPolicy } from '../utils/passwordPolicy.js';
 const SALT_ROUNDS = 10;
 
 /**
- * Coaches visibles para admin: creados por él O legacy (createdById null).
- * Incluye coaches inactivos y soft-deleted (deletedAt); el front muestra estado.
- * Clientes del coach: todos los ligados por client.coachId (activos e inactivos).
+ * Coaches visibles para admin: todos los usuarios con rol coach.
+ * Incluye inactivos y soft-deleted (deletedAt); el front muestra estado.
  */
-function adminCoachUserWhere(adminUserId) {
-  return {
-    role: 'coach',
-    OR: [{ createdById: adminUserId }, { createdById: null }],
-  };
-}
-
 export async function getUsersForViewer(currentUser) {
   if (!currentUser?.id || !currentUser?.role) {
     throw new ForbiddenError('Usuario no válido');
@@ -24,7 +16,7 @@ export async function getUsersForViewer(currentUser) {
 
   if (currentUser.role === 'admin') {
     const users = await prisma.user.findMany({
-      where: adminCoachUserWhere(currentUser.id),
+      where: { role: 'coach' },
       include: {
         coach: {
           include: {
@@ -98,6 +90,9 @@ export async function updateUserPassword(actor, targetUserId, { password }) {
   if (!target) throw new NotFoundError('Usuario');
 
   if (actor.role === 'admin') {
+    if (target.role === 'admin' && actor.id !== target.id) {
+      throw new ForbiddenError('No puedes modificar la contraseña de otro administrador');
+    }
     if (target.role === 'cliente') {
       throw new ForbiddenError('Los administradores no pueden gestionar contraseñas de alumnos');
     }
@@ -145,6 +140,7 @@ function formatCoachUserForAdmin(u, activeByCoach) {
   const activeClients = cid != null ? activeByCoach[cid] ?? 0 : 0;
   return {
     id: u.id,
+    username: u.username,
     email: u.email,
     name: u.name,
     lastName: u.lastName,
@@ -170,6 +166,7 @@ function formatClientUserForCoach(u) {
   const cl = u.client;
   return {
     id: u.id,
+    username: u.username,
     email: u.email,
     name: u.name,
     lastName: u.lastName,

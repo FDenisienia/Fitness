@@ -3,6 +3,11 @@ import { prisma } from '../utils/prisma.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
 import { assertPasswordPolicy } from '../utils/passwordPolicy.js';
 import * as userDeletionService from './userDeletionService.js';
+import {
+  normalizeUsername,
+  assertValidUsernameShape,
+  normalizeOptionalClientEmail,
+} from '../utils/authIdentity.js';
 
 const SALT_ROUNDS = 10;
 
@@ -23,7 +28,7 @@ export async function listClientsByCoach(coachId, options = {}) {
   const expandSet = new Set(parseExpandList(options.expand));
 
   const include = {
-    user: { select: { id: true, email: true, name: true, lastName: true, status: true } },
+    user: { select: { id: true, username: true, email: true, name: true, lastName: true, status: true } },
     coach: { include: { user: { select: { id: true } } } },
   };
 
@@ -99,10 +104,21 @@ export async function getClientById(id, coachId = null) {
 }
 
 export async function createClient(coachId, data) {
-  const existing = await prisma.user.findUnique({
-    where: { email: data.email.toLowerCase() },
+  const username = normalizeUsername(data.username);
+  assertValidUsernameShape(username);
+
+  const dupUser = await prisma.user.findUnique({
+    where: { username },
   });
-  if (existing) throw new BadRequestError('Ya existe un usuario con ese email');
+  if (dupUser) {
+    throw new BadRequestError('Ese nombre de usuario ya está en uso.');
+  }
+
+  const emailOpt = normalizeOptionalClientEmail(data.email);
+  if (emailOpt) {
+    const exists = await prisma.user.findFirst({ where: { email: emailOpt } });
+    if (exists) throw new BadRequestError('Ese correo electrónico ya está registrado.');
+  }
 
   const plain = data.password != null ? String(data.password).trim() : '';
   if (!plain) {
@@ -112,7 +128,8 @@ export async function createClient(coachId, data) {
   const passwordHash = await bcrypt.hash(plain, SALT_ROUNDS);
   const user = await prisma.user.create({
     data: {
-      email: data.email.toLowerCase(),
+      username,
+      email: emailOpt,
       passwordHash,
       name: data.name,
       lastName: data.lastName || null,
@@ -174,15 +191,28 @@ export async function updateClient(id, coachId, data) {
   const userData = {};
   if (data.name !== undefined) userData.name = data.name;
   if (data.lastName !== undefined) userData.lastName = data.lastName;
-  if (data.email !== undefined) {
-    const nextEmail = String(data.email).toLowerCase().trim();
-    if (nextEmail !== client.user.email) {
+  if (data.username !== undefined) {
+    const nextUser = normalizeUsername(data.username);
+    assertValidUsernameShape(nextUser);
+    if (nextUser !== client.user.username) {
       const taken = await prisma.user.findFirst({
-        where: { email: nextEmail, id: { not: client.userId } },
+        where: { username: nextUser, id: { not: client.userId } },
       });
-      if (taken) throw new BadRequestError('Ya existe un usuario con ese email');
+      if (taken) throw new BadRequestError('Ese nombre de usuario ya está en uso.');
+      userData.username = nextUser;
     }
-    userData.email = nextEmail;
+  }
+  if (data.email !== undefined) {
+    const nextEmail = normalizeOptionalClientEmail(data.email);
+    if (nextEmail !== client.user.email) {
+      if (nextEmail) {
+        const taken = await prisma.user.findFirst({
+          where: { email: nextEmail, id: { not: client.userId } },
+        });
+        if (taken) throw new BadRequestError('Ese correo electrónico ya está registrado.');
+      }
+      userData.email = nextEmail;
+    }
   }
   if (Object.keys(userData).length > 0) {
     await prisma.user.update({
@@ -213,6 +243,7 @@ function formatClient(c) {
     createdAt: c.createdAt,
     user: c.user ? {
       id: c.user.id,
+      username: c.user.username,
       email: c.user.email,
       name: c.user.name,
       lastName: c.user.lastName,

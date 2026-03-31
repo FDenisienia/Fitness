@@ -24,7 +24,7 @@ function EyeToggleIcon({ visible }) {
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -39,7 +39,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(username, password);
       if (result.success && result.user) {
         try {
           const { data } = await chatApi.unreadSummary();
@@ -94,12 +94,13 @@ export default function LoginPage() {
             {error && <Alert variant="danger">{error}</Alert>}
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
+                <Form.Label>Nombre de usuario</Form.Label>
                 <Form.Control
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ej: coach, cliente1"
+                  autoComplete="username"
                   required
                 />
               </Form.Group>
@@ -140,7 +141,7 @@ export default function LoginPage() {
           </Card.Body>
         </Card>
         <p className="text-center mt-3 text-muted small">
-          Demo (solo entorno local tras seed): admin@fitcoach.com / Admin123 | coach@fitcoach.com / Coach123 | cliente1@email.com / Cliente123
+          Demo (solo entorno local tras seed): admin / Admin123 | coach / Coach123 | cliente1 o cliente2 / Cliente123
         </p>
       </Container>
     </div>

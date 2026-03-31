@@ -33,7 +33,7 @@ export function validateContactPayload(body) {
 }
 
 /**
- * Envía el formulario de contacto de la landing a CONTACT_MAIL_TO (por defecto athlento.app@gmail.com).
+ * Envía el formulario de contacto a CONTACT_MAIL_TO, o a CONTACT_SMTP_USER si no definís destino, o athlento.app@gmail.com.
  * Requiere CONTACT_SMTP_USER y CONTACT_SMTP_PASS (p. ej. contraseña de aplicación de Gmail).
  */
 export async function sendContactEmail({ name, email, message, plan }) {
@@ -49,6 +49,9 @@ export async function sendContactEmail({ name, email, message, plan }) {
     port: config.contactSmtpPort,
     secure,
     ...(!secure && { requireTLS: true }),
+    connectionTimeout: 20_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 25_000,
     auth: {
       user: config.contactSmtpUser,
       pass: config.contactSmtpPass,
@@ -76,12 +79,39 @@ export async function sendContactEmail({ name, email, message, plan }) {
     <pre style="font-family:sans-serif;white-space:pre-wrap;">${escHtml(message)}</pre>
   `.trim();
 
-  await transporter.sendMail({
-    from: `"Athlento — contacto web" <${config.contactSmtpUser}>`,
-    to: config.contactMailTo,
-    replyTo: email,
-    subject: `[Athlento] Contacto: ${name.slice(0, 60)}`,
-    text,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"Athlento — contacto web" <${config.contactSmtpUser}>`,
+      to: config.contactMailTo,
+      replyTo: email,
+      subject: `[Athlento] Contacto: ${name.slice(0, 60)}`,
+      text,
+      html,
+    });
+  } catch (e) {
+    const code = e?.code || e?.responseCode;
+    const msg = String(e?.message || e || '');
+    const isAuth =
+      code === 'EAUTH' ||
+      /Invalid login|authentication|^534|^535|BadCredentials|Username and Password not accepted|Application-specific password required/i.test(
+        msg
+      );
+    const isNet =
+      /ETIMEDOUT|ECONNREFUSED|ESOCKET|ECONNRESET|ENOTFOUND|getaddrinfo|timeout|socket|Greeting never received|ECONNRESET/i.test(
+        msg
+      );
+    if (isAuth) {
+      throw new ServiceUnavailableError(
+        'No se pudo autenticar con el servidor de correo. Revisá CONTACT_SMTP_USER (email completo) y CONTACT_SMTP_PASS (contraseña de aplicación, sin espacios).'
+      );
+    }
+    if (isNet) {
+      throw new ServiceUnavailableError(
+        'No se pudo conectar al servidor SMTP. En hosts como Railway el correo saliente por SMTP suele estar bloqueado en planes gratuitos; hace falta un plan que permita SMTP o un proveedor con API (Resend, SendGrid, etc.).'
+      );
+    }
+    throw new ServiceUnavailableError(
+      'No se pudo enviar el correo. Revisá la configuración SMTP o probá más tarde.'
+    );
+  }
 }

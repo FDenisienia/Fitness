@@ -29,8 +29,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (email, password) => {
-    const { user: u, token } = await authApi.login(email, password);
+  const login = async (username, password) => {
+    const { user: u, token } = await authApi.login(username, password);
     sessionStorage.setItem(TOKEN_KEY, token);
     sessionStorage.setItem(USER_KEY, JSON.stringify(u));
     setUser(u);

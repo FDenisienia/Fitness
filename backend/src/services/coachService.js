@@ -3,6 +3,11 @@ import { prisma } from '../utils/prisma.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
 import { assertPasswordPolicy } from '../utils/passwordPolicy.js';
 import {
+  normalizeUsername,
+  assertValidUsernameShape,
+  normalizeCoachEmail,
+} from '../utils/authIdentity.js';
+import {
   activateCoachUserAndAllClients,
   blockCoachUserAndAllClients,
 } from './coachClientBlockCascade.js';
@@ -21,6 +26,7 @@ function formatCoach(c, activeClientsByCoachId = {}) {
     userId: c.userId,
     name: u.name,
     lastName: u.lastName,
+    username: u.username,
     email: u.email,
     phone: c.phone,
     specialty: c.specialty,
@@ -38,6 +44,7 @@ function formatCoach(c, activeClientsByCoachId = {}) {
     user: u.id
       ? {
           id: u.id,
+          username: u.username,
           email: u.email,
           name: u.name,
           lastName: u.lastName,
@@ -47,13 +54,24 @@ function formatCoach(c, activeClientsByCoachId = {}) {
   };
 }
 
-/** Mutaciones: solo coach no eliminado (soft delete) y bajo el alcance del admin. */
+/**
+ * Mutaciones: coach activo (sin soft-delete).
+ * `adminUserId` null → admin de plataforma: cualquier coach.
+ * string → compatibilidad: solo coaches creados por ese admin o legacy (createdById null).
+ */
 const coachAdminScopeWhere = (createdByAdminUserId) => ({
   deletedAt: null,
   user: {
     OR: [{ createdById: createdByAdminUserId }, { createdById: null }],
   },
 });
+
+function coachMutationWhere(coachId, adminUserId) {
+  if (adminUserId == null) {
+    return { id: coachId, deletedAt: null };
+  }
+  return { id: coachId, ...coachAdminScopeWhere(adminUserId) };
+}
 
 export async function listCoaches(createdByAdminUserId) {
   const coaches = await prisma.coach.findMany({
@@ -65,7 +83,7 @@ export async function listCoaches(createdByAdminUserId) {
         }
       : {},
     include: {
-      user: { select: { id: true, email: true, name: true, lastName: true, status: true, createdById: true } },
+      user: { select: { id: true, username: true, email: true, name: true, lastName: true, status: true, createdById: true } },
       _count: {
         select: {
           clients: true,
@@ -98,7 +116,7 @@ export async function getCoachById(id, createdByAdminUserId = null) {
   const coach = await prisma.coach.findFirst({
     where: {
       id,
-      ...(createdByAdminUserId
+      ...(createdByAdminUserId != null
         ? {
             user: {
               OR: [{ createdById: createdByAdminUserId }, { createdById: null }],
@@ -123,14 +141,103 @@ export async function getCoachById(id, createdByAdminUserId = null) {
   return formatCoach(coach, { [id]: activeN });
 }
 
+/**
+ * Detalle para panel admin: coach + clientes (perfil y usuario).
+ */
+export async function getCoachByIdWithClients(id, createdByAdminUserId = null) {
+  const coach = await prisma.coach.findFirst({
+    where: {
+      id,
+      ...(createdByAdminUserId != null
+        ? {
+            user: {
+              OR: [{ createdById: createdByAdminUserId }, { createdById: null }],
+            },
+          }
+        : {}),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          name: true,
+          lastName: true,
+          status: true,
+          createdAt: true,
+          createdById: true,
+        },
+      },
+      clients: {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              name: true,
+              lastName: true,
+              status: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          clients: true,
+          routines: true,
+        },
+      },
+    },
+  });
+  if (!coach) throw new NotFoundError('Coach');
+  const activeN = await prisma.client.count({
+    where: { coachId: id, user: { status: 'active' } },
+  });
+  const base = formatCoach(coach, { [id]: activeN });
+  base.clients = (coach.clients || []).map((cl) => ({
+    id: cl.id,
+    userId: cl.userId,
+    age: cl.age,
+    weight: cl.weight,
+    height: cl.height,
+    objective: cl.objective,
+    objectiveDescription: cl.objectiveDescription,
+    level: cl.level,
+    createdAt: cl.createdAt,
+    user: cl.user
+      ? {
+          id: cl.user.id,
+          username: cl.user.username,
+          email: cl.user.email,
+          name: cl.user.name,
+          lastName: cl.user.lastName,
+          status: cl.user.status,
+        }
+      : null,
+  }));
+  return base;
+}
+
 export async function createCoach(data, createdByAdminUserId) {
   if (!createdByAdminUserId) {
     throw new ForbiddenError('Solo un administrador puede crear coaches');
   }
-  const existing = await prisma.user.findUnique({
-    where: { email: data.email.toLowerCase() },
+  const username = normalizeUsername(data.username);
+  assertValidUsernameShape(username);
+  const email = normalizeCoachEmail(data.email);
+
+  const dupUser = await prisma.user.findFirst({
+    where: { OR: [{ username }, { email }] },
   });
-  if (existing) throw new BadRequestError('Ya existe un usuario con ese email');
+  if (dupUser) {
+    if (dupUser.username === username) {
+      throw new BadRequestError('Ese nombre de usuario ya está en uso.');
+    }
+    throw new BadRequestError('Ese correo electrónico ya está registrado.');
+  }
 
   const plain = data.password != null ? String(data.password).trim() : '';
   if (!plain) {
@@ -140,7 +247,8 @@ export async function createCoach(data, createdByAdminUserId) {
   const passwordHash = await bcrypt.hash(plain, SALT_ROUNDS);
   const user = await prisma.user.create({
     data: {
-      email: data.email.toLowerCase(),
+      username,
+      email,
       passwordHash,
       name: data.name,
       lastName: data.lastName || null,
@@ -167,10 +275,7 @@ export async function createCoach(data, createdByAdminUserId) {
 
 export async function updateCoach(id, data, createdByAdminUserId = null) {
   const coach = await prisma.coach.findFirst({
-    where: {
-      id,
-      ...(createdByAdminUserId ? coachAdminScopeWhere(createdByAdminUserId) : { deletedAt: null }),
-    },
+    where: coachMutationWhere(id, createdByAdminUserId),
     include: { user: true },
   });
   if (!coach) throw new NotFoundError('Coach');
@@ -185,15 +290,51 @@ export async function updateCoach(id, data, createdByAdminUserId = null) {
       subscriptionStatus: data.subscriptionStatus !== undefined ? data.subscriptionStatus : undefined,
     },
   });
-  if (data.name !== undefined || data.email !== undefined) {
+  if (data.name !== undefined || data.email !== undefined || data.username !== undefined) {
+    const userUpdate = {};
+    if (data.name !== undefined) userUpdate.name = data.name;
+    if (data.email !== undefined) {
+      const nextEmail = normalizeCoachEmail(data.email);
+      if (nextEmail !== coach.user.email) {
+        const taken = await prisma.user.findFirst({
+          where: { email: nextEmail, id: { not: coach.userId } },
+        });
+        if (taken) throw new BadRequestError('Ese correo electrónico ya está registrado.');
+      }
+      userUpdate.email = nextEmail;
+    }
+    if (data.username !== undefined) {
+      const nextUser = normalizeUsername(data.username);
+      assertValidUsernameShape(nextUser);
+      if (nextUser !== coach.user.username) {
+        const taken = await prisma.user.findFirst({
+          where: { username: nextUser, id: { not: coach.userId } },
+        });
+        if (taken) throw new BadRequestError('Ese nombre de usuario ya está en uso.');
+      }
+      userUpdate.username = nextUser;
+    }
     await prisma.user.update({
       where: { id: coach.userId },
-      data: {
-        name: data.name !== undefined ? data.name : undefined,
-        email: data.email !== undefined ? data.email.toLowerCase() : undefined,
-      },
+      data: userUpdate,
     });
   }
+
+  if (data.password !== undefined && data.password !== null) {
+    const plain = String(data.password).trim();
+    if (plain) {
+      assertPasswordPolicy(plain);
+      const passwordHash = await bcrypt.hash(plain, SALT_ROUNDS);
+      await prisma.user.update({
+        where: { id: coach.userId },
+        data: {
+          passwordHash,
+          tokenVersion: { increment: 1 },
+        },
+      });
+    }
+  }
+
   return getCoachById(id, createdByAdminUserId);
 }
 
@@ -203,7 +344,7 @@ export async function updateCoach(id, data, createdByAdminUserId = null) {
 export async function deactivateCoach(coachId, createdByAdminUserId) {
   await prisma.$transaction(async (tx) => {
     const coach = await tx.coach.findFirst({
-      where: { id: coachId, ...coachAdminScopeWhere(createdByAdminUserId) },
+      where: coachMutationWhere(coachId, createdByAdminUserId),
       select: { id: true },
     });
     if (!coach) throw new NotFoundError('Coach');
@@ -220,7 +361,7 @@ export async function deactivateCoach(coachId, createdByAdminUserId) {
 export async function activateCoach(coachId, createdByAdminUserId) {
   await prisma.$transaction(async (tx) => {
     const coach = await tx.coach.findFirst({
-      where: { id: coachId, ...coachAdminScopeWhere(createdByAdminUserId) },
+      where: coachMutationWhere(coachId, createdByAdminUserId),
       select: { id: true },
     });
     if (!coach) throw new NotFoundError('Coach');
@@ -236,7 +377,7 @@ export async function activateCoach(coachId, createdByAdminUserId) {
 export async function softDeleteCoach(coachId, createdByAdminUserId) {
   await prisma.$transaction(async (tx) => {
     const coach = await tx.coach.findFirst({
-      where: { id: coachId, ...coachAdminScopeWhere(createdByAdminUserId) },
+      where: coachMutationWhere(coachId, createdByAdminUserId),
       select: { id: true },
     });
     if (!coach) throw new NotFoundError('Coach');

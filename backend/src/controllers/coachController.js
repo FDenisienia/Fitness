@@ -3,7 +3,7 @@ import * as userDeletionService from '../services/userDeletionService.js';
 
 export async function list(req, res, next) {
   try {
-    const coaches = await coachService.listCoaches(req.user.id);
+    const coaches = await coachService.listCoaches(null);
     res.json({ success: true, data: coaches });
   } catch (err) {
     next(err);
@@ -12,7 +12,7 @@ export async function list(req, res, next) {
 
 export async function getById(req, res, next) {
   try {
-    const coach = await coachService.getCoachById(req.params.id, req.user.id);
+    const coach = await coachService.getCoachById(req.params.id, null);
     res.json({ success: true, data: coach });
   } catch (err) {
     next(err);
@@ -30,7 +30,7 @@ export async function create(req, res, next) {
 
 export async function update(req, res, next) {
   try {
-    const coach = await coachService.updateCoach(req.params.id, req.body, req.user.id);
+    const coach = await coachService.updateCoach(req.params.id, req.body, null);
     res.json({ success: true, data: coach });
   } catch (err) {
     next(err);
@@ -39,7 +39,7 @@ export async function update(req, res, next) {
 
 export async function deactivate(req, res, next) {
   try {
-    const coach = await coachService.deactivateCoach(req.params.id, req.user.id);
+    const coach = await coachService.deactivateCoach(req.params.id, null);
     res.json({ success: true, data: coach });
   } catch (err) {
     next(err);
@@ -48,7 +48,7 @@ export async function deactivate(req, res, next) {
 
 export async function activate(req, res, next) {
   try {
-    const coach = await coachService.activateCoach(req.params.id, req.user.id);
+    const coach = await coachService.activateCoach(req.params.id, null);
     res.json({ success: true, data: coach });
   } catch (err) {
     next(err);

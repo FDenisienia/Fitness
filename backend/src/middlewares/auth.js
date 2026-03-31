@@ -40,6 +40,7 @@ export async function attachUser(req, res, next) {
       where: { id: req.userId },
       select: {
         id: true,
+        username: true,
         email: true,
         name: true,
         lastName: true,

@@ -26,7 +26,7 @@ export async function list(req, res, next) {
   try {
     const data = await userService.getUsersForViewer(req.user);
     const meta = {
-      scope: req.user.role === 'admin' ? 'coaches_created_by_me' : 'my_clients',
+      scope: req.user.role === 'admin' ? 'all_coaches' : 'my_clients',
       includesInactive: true,
       includesSoftDeletedCoaches: req.user.role === 'admin',
       total: data.length,

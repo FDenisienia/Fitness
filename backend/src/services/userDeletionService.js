@@ -15,16 +15,8 @@ function logHardDeletion(payload) {
   );
 }
 
-function assertAdminCanManageCoachUser(adminUserId, coachUserRow) {
-  const cb = coachUserRow.createdById;
-  if (cb !== adminUserId && cb !== null) {
-    throw new ForbiddenError('No puedes eliminar este coach');
-  }
-}
-
 function assertActorCanDeleteCoach(actor, targetCoachUser) {
   if (actor.role === 'admin') {
-    assertAdminCanManageCoachUser(actor.id, targetCoachUser);
     return;
   }
   throw new ForbiddenError('Solo un administrador puede eliminar un coach');
@@ -147,10 +139,7 @@ export async function deleteCoachByProfileId(actor, coachProfileId) {
   }
 
   const coach = await prisma.coach.findFirst({
-    where: {
-      id: coachProfileId,
-      user: { OR: [{ createdById: actor.id }, { createdById: null }] },
-    },
+    where: { id: coachProfileId },
     include: { user: true },
   });
   if (!coach) throw new NotFoundError('Coach');
@@ -187,5 +176,5 @@ export async function deleteClientByProfileId(actor, clientProfileId) {
  * Soft delete de coach (solo admin, mismo alcance que antes). No usa deleteUser.
  */
 export async function softDeleteCoachByProfileId(actor, coachProfileId) {
-  return coachService.softDeleteCoach(coachProfileId, actor.id);
+  return coachService.softDeleteCoach(coachProfileId, null);
 }

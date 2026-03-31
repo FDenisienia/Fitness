@@ -18,7 +18,15 @@ export default function CoachesPage({ embedded = false }) {
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [newCoach, setNewCoach] = useState({ name: '', lastName: '', email: '', password: '', specialty: '', subscriptionPlan: 'basico' });
+  const [newCoach, setNewCoach] = useState({
+    username: '',
+    name: '',
+    lastName: '',
+    email: '',
+    password: '',
+    specialty: '',
+    subscriptionPlan: 'basico',
+  });
   const [creating, setCreating] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
@@ -46,6 +54,7 @@ export default function CoachesPage({ embedded = false }) {
   const openEdit = (c) => {
     setEditingCoach(c);
     setEditForm({
+      username: c.username || '',
       name: c.name || '',
       lastName: c.lastName || '',
       email: c.email || '',
@@ -61,6 +70,7 @@ export default function CoachesPage({ embedded = false }) {
     setSaving(true);
     try {
       await coachesApi.update(editingCoach.id, {
+        username: editForm.username,
         name: editForm.name,
         lastName: editForm.lastName,
         email: editForm.email,
@@ -78,7 +88,7 @@ export default function CoachesPage({ embedded = false }) {
   };
 
   const createCoach = async () => {
-    if (!newCoach.email || !newCoach.password) return;
+    if (!newCoach.username?.trim() || !newCoach.email || !newCoach.password) return;
     const pwErr = getPasswordPolicyError(newCoach.password);
     if (pwErr) {
       alert(pwErr);
@@ -87,6 +97,7 @@ export default function CoachesPage({ embedded = false }) {
     setCreating(true);
     try {
       await coachesApi.create({
+        username: newCoach.username.trim().toLowerCase(),
         name: newCoach.name,
         lastName: newCoach.lastName,
         email: newCoach.email,
@@ -95,7 +106,15 @@ export default function CoachesPage({ embedded = false }) {
         subscriptionPlan: newCoach.subscriptionPlan,
       });
       setShowCreate(false);
-      setNewCoach({ name: '', lastName: '', email: '', password: '', specialty: '', subscriptionPlan: 'basico' });
+      setNewCoach({
+        username: '',
+        name: '',
+        lastName: '',
+        email: '',
+        password: '',
+        specialty: '',
+        subscriptionPlan: 'basico',
+      });
       loadCoaches();
     } catch (err) {
       alert(err.message || 'Error al crear coach');
@@ -222,6 +241,7 @@ export default function CoachesPage({ embedded = false }) {
           <thead>
             <tr>
               <th>Coach</th>
+              <th>Usuario</th>
               <th>Email</th>
               <th>Plan</th>
               <th>Alumnos</th>
@@ -240,7 +260,8 @@ export default function CoachesPage({ embedded = false }) {
               return (
                 <tr key={c.id}>
                   <td>{c.name} {c.lastName}</td>
-                  <td>{c.email}</td>
+                  <td>{c.username || '—'}</td>
+                  <td>{c.email || '—'}</td>
                   <td><Badge bg="primary">{plan.name}</Badge> {plan.id === 'personalizado' ? 'Personalizado' : `USD ${Number(plan.price).toFixed(2)}/mes`}</td>
                   <td className="small">
                     <strong>{activeAl}</strong> activos
@@ -287,6 +308,7 @@ export default function CoachesPage({ embedded = false }) {
       <Modal show={showEdit} onHide={() => setShowEdit(false)}>
         <Modal.Header closeButton><Modal.Title>Editar coach</Modal.Title></Modal.Header>
         <Modal.Body>
+          <Form.Group className="mb-3"><Form.Label>Nombre de usuario</Form.Label><Form.Control value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} autoComplete="off" /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Apellido</Form.Label><Form.Control value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
@@ -303,6 +325,15 @@ export default function CoachesPage({ embedded = false }) {
       <Modal show={showCreate} onHide={() => setShowCreate(false)}>
         <Modal.Header closeButton><Modal.Title>Crear coach</Modal.Title></Modal.Header>
         <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Nombre de usuario</Form.Label>
+            <Form.Control
+              value={newCoach.username}
+              onChange={e => setNewCoach(n => ({ ...n, username: e.target.value }))}
+              autoComplete="off"
+              placeholder="solo letras minúsculas, números, guiones"
+            />
+          </Form.Group>
           <Form.Group className="mb-3"><Form.Label>Nombre</Form.Label><Form.Control value={newCoach.name} onChange={e => setNewCoach(n => ({ ...n, name: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Apellido</Form.Label><Form.Control value={newCoach.lastName} onChange={e => setNewCoach(n => ({ ...n, lastName: e.target.value }))} /></Form.Group>
           <Form.Group className="mb-3"><Form.Label>Email</Form.Label><Form.Control type="email" value={newCoach.email} onChange={e => setNewCoach(n => ({ ...n, email: e.target.value }))} /></Form.Group>
@@ -316,7 +347,7 @@ export default function CoachesPage({ embedded = false }) {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowCreate(false)}>Cancelar</Button>
-          <Button className="btn-primary" onClick={createCoach} disabled={creating || !newCoach.email || !newCoach.password}>{creating ? 'Creando...' : 'Crear'}</Button>
+          <Button className="btn-primary" onClick={createCoach} disabled={creating || !newCoach.username?.trim() || !newCoach.email || !newCoach.password}>{creating ? 'Creando...' : 'Crear'}</Button>
         </Modal.Footer>
       </Modal>
 
