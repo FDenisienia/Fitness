@@ -131,6 +131,10 @@ export async function register(body) {
 export async function login(usernameInput, password) {
   const username = normalizeUsername(usernameInput);
   assertValidUsernameShape(username);
+  const plain = password != null ? String(password).trim() : '';
+  if (!plain) {
+    throw new UnauthorizedError(CREDENTIALS_ERROR);
+  }
 
   const user = await userAuthModel.findUserByUsernameForAuth(username);
   if (!user) {
@@ -139,7 +143,7 @@ export async function login(usernameInput, password) {
   if (isUserBlocked(user.status)) {
     throw new UnauthorizedError(BLOCKED_ERROR);
   }
-  const valid = await bcrypt.compare(password, user.passwordHash);
+  const valid = await bcrypt.compare(plain, user.passwordHash);
   if (!valid) {
     throw new UnauthorizedError(CREDENTIALS_ERROR);
   }
