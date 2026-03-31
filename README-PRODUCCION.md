@@ -39,7 +39,8 @@ Defínelas en el panel del servicio (no subas `.env` con secretos al repo). Refe
 | `CORS_ORIGINS` | Opcional: URLs extra separadas por coma si hay más orígenes. |
 | `JWT_EXPIRES_IN` | Opcional (por defecto suele usarse `7d`). |
 | `CONTACT_MAIL_TO` | Opcional; por defecto `athlento.app@gmail.com` (destino del formulario de contacto de la landing). |
-| `CONTACT_SMTP_USER` / `CONTACT_SMTP_PASS` | Obligatorias para que el formulario de contacto envíe correo (p. ej. cuenta Gmail + [contraseña de aplicación](https://support.google.com/accounts/answer/185833)). Ver `backend/.env.example`. |
+| `RESEND_API_KEY` / `CONTACT_RESEND_FROM` | **Recomendado en Railway:** envío del formulario vía [Resend](https://resend.com) (HTTPS). La API key va en `RESEND_API_KEY`; `CONTACT_RESEND_FROM` es un remitente verificado en Resend (ej. `contacto@tudominio.com`). Si ambas están definidas, el backend usa Resend y **no** intenta SMTP. |
+| `CONTACT_SMTP_USER` / `CONTACT_SMTP_PASS` | Alternativa por SMTP (p. ej. Gmail + [contraseña de aplicación](https://support.google.com/accounts/answer/185833)). En planes gratuitos de varios hosts el **SMTP saliente suele estar bloqueado**; por eso conviene Resend arriba. Ver `backend/.env.example`. |
 
 **Nota:** En muchos hosts, `PORT` lo inyecta la plataforma; si no, define `PORT` (p. ej. `3001`) según lo que espere tu proxy.
 

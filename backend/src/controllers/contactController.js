@@ -11,7 +11,7 @@ export async function submitContact(req, res, next) {
     console.error('[contact]', err);
     next(
       new ServiceUnavailableError(
-        'No se pudo enviar el mensaje. Revisá CONTACT_SMTP_USER, CONTACT_SMTP_PASS y que el host permita SMTP; mirá los logs del servidor para el detalle.'
+        'No se pudo enviar el mensaje. Revisá RESEND_API_KEY + CONTACT_RESEND_FROM o CONTACT_SMTP_* según tu configuración; mirá los logs del servidor para el detalle.'
       )
     );
   }

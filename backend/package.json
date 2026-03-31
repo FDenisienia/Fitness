@@ -14,7 +14,8 @@
     "db:push:dev": "dotenv -e .env.local -- npx prisma db push",
     "db:seed:dev": "dotenv -e .env.local -- node prisma/seed.js",
     "db:studio:dev": "dotenv -e .env.local -- npx prisma studio",
-    "db:migrate:dev": "dotenv -e .env.local -- npx prisma migrate deploy"
+    "db:migrate:dev": "dotenv -e .env.local -- npx prisma migrate deploy",
+    "admin:verify": "node scripts/verify-admin-auth.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

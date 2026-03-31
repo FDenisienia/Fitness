@@ -12,6 +12,9 @@ const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '400', 10);
 const contactSmtpPort = parseInt(process.env.CONTACT_SMTP_PORT || '465', 10);
 const contactSmtpUser = (process.env.CONTACT_SMTP_USER || '').trim();
 const contactMailToEnv = (process.env.CONTACT_MAIL_TO || '').trim();
+const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
+/** Remitente verificado en Resend (ej. contacto@tudominio.com). Obligatorio si usás API Resend. */
+const contactResendFrom = (process.env.CONTACT_RESEND_FROM || '').trim();
 /** Bandeja del formulario de contacto: explícita, o la misma cuenta SMTP, o fallback histórico. */
 const contactMailTo =
   contactMailToEnv || contactSmtpUser || 'athlento.app@gmail.com';
@@ -35,6 +38,8 @@ export const config = {
   contactSmtpPort: Number.isFinite(contactSmtpPort) && contactSmtpPort > 0 ? contactSmtpPort : 465,
   contactSmtpUser,
   contactSmtpPass: (process.env.CONTACT_SMTP_PASS || '').trim(),
+  resendApiKey,
+  contactResendFrom,
 };
 
 /** Falla al arranque en producción si el JWT no está configurado de forma segura. */

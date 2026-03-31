@@ -10,8 +10,16 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-function isConfigured() {
+function isSmtpConfigured() {
   return !!(config.contactSmtpUser && config.contactSmtpPass);
+}
+
+function isResendConfigured() {
+  return !!(config.resendApiKey && config.contactResendFrom);
+}
+
+function isConfigured() {
+  return isResendConfigured() || isSmtpConfigured();
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,32 +40,7 @@ export function validateContactPayload(body) {
   return { name, email, message, plan };
 }
 
-/**
- * Envía el formulario de contacto a CONTACT_MAIL_TO, o a CONTACT_SMTP_USER si no definís destino, o athlento.app@gmail.com.
- * Requiere CONTACT_SMTP_USER y CONTACT_SMTP_PASS (p. ej. contraseña de aplicación de Gmail).
- */
-export async function sendContactEmail({ name, email, message, plan }) {
-  if (!isConfigured()) {
-    throw new ServiceUnavailableError(
-      'El envío de contacto no está configurado en el servidor. Definí CONTACT_SMTP_USER y CONTACT_SMTP_PASS.'
-    );
-  }
-
-  const secure = config.contactSmtpPort === 465;
-  const transporter = nodemailer.createTransport({
-    host: config.contactSmtpHost,
-    port: config.contactSmtpPort,
-    secure,
-    ...(!secure && { requireTLS: true }),
-    connectionTimeout: 20_000,
-    greetingTimeout: 15_000,
-    socketTimeout: 25_000,
-    auth: {
-      user: config.contactSmtpUser,
-      pass: config.contactSmtpPass,
-    },
-  });
-
+function buildContactMailBodies({ name, email, message, plan }) {
   const planLine = plan ? `Plan de interés: ${plan}` : 'Plan de interés: (no indicado)';
   const text = [
     `Nuevo mensaje desde athlento.app (contacto web)`,
@@ -78,6 +61,82 @@ export async function sendContactEmail({ name, email, message, plan }) {
     <p><strong>Mensaje:</strong></p>
     <pre style="font-family:sans-serif;white-space:pre-wrap;">${escHtml(message)}</pre>
   `.trim();
+
+  return { text, html };
+}
+
+async function sendContactViaResend({ name, email, message, plan }) {
+  const { text, html } = buildContactMailBodies({ name, email, message, plan });
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `Athlento — contacto web <${config.contactResendFrom}>`,
+        to: [config.contactMailTo],
+        reply_to: email,
+        subject: `[Athlento] Contacto: ${name.slice(0, 60)}`,
+        text,
+        html,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const detail =
+        (typeof data?.message === 'string' && data.message) ||
+        (data?.error && typeof data.error === 'object' && data.error.message) ||
+        res.statusText ||
+        'Error desconocido';
+      throw new ServiceUnavailableError(
+        `Resend rechazó el envío (${res.status}): ${detail}. Revisá RESEND_API_KEY, CONTACT_RESEND_FROM (dominio verificado) y CONTACT_MAIL_TO.`
+      );
+    }
+  } catch (e) {
+    if (e instanceof ServiceUnavailableError) throw e;
+    const msg = String(e?.message || e || '');
+    if (/fetch failed|ENOTFOUND|ETIMEDOUT|ECONNREFUSED/i.test(msg)) {
+      throw new ServiceUnavailableError(
+        'No se pudo contactar a la API de Resend. Comprobá la red del servidor o probá más tarde.'
+      );
+    }
+    throw new ServiceUnavailableError(`No se pudo enviar el correo vía Resend: ${msg}`);
+  }
+}
+
+/**
+ * Envía el formulario a CONTACT_MAIL_TO (o fallback). Orden: si hay RESEND_API_KEY + CONTACT_RESEND_FROM, usa Resend (recomendado en Railway); si no, SMTP con CONTACT_SMTP_*.
+ */
+export async function sendContactEmail({ name, email, message, plan }) {
+  if (!isConfigured()) {
+    throw new ServiceUnavailableError(
+      'El envío de contacto no está configurado. En hosts como Railway usá RESEND_API_KEY y CONTACT_RESEND_FROM (API HTTPS), o definí CONTACT_SMTP_USER y CONTACT_SMTP_PASS si el host permite SMTP.'
+    );
+  }
+
+  if (isResendConfigured()) {
+    await sendContactViaResend({ name, email, message, plan });
+    return;
+  }
+
+  const secure = config.contactSmtpPort === 465;
+  const transporter = nodemailer.createTransport({
+    host: config.contactSmtpHost,
+    port: config.contactSmtpPort,
+    secure,
+    ...(!secure && { requireTLS: true }),
+    connectionTimeout: 20_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 25_000,
+    auth: {
+      user: config.contactSmtpUser,
+      pass: config.contactSmtpPass,
+    },
+  });
+
+  const { text, html } = buildContactMailBodies({ name, email, message, plan });
 
   try {
     await transporter.sendMail({

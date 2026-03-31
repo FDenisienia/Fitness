@@ -11,7 +11,11 @@ async function main() {
 
   const adminUser = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},
+    update: {
+      passwordHash: hash('Admin123'),
+      email: 'admin@fitcoach.com',
+      status: 'active',
+    },
     create: {
       username: 'admin',
       email: 'admin@fitcoach.com',
@@ -25,7 +29,11 @@ async function main() {
 
   const coachUser = await prisma.user.upsert({
     where: { username: 'coach' },
-    update: {},
+    update: {
+      passwordHash: hash('Coach123'),
+      email: 'coach@fitcoach.com',
+      status: 'active',
+    },
     create: {
       username: 'coach',
       email: 'coach@fitcoach.com',
@@ -55,7 +63,11 @@ async function main() {
 
   const client1User = await prisma.user.upsert({
     where: { username: 'cliente1' },
-    update: {},
+    update: {
+      passwordHash: hash('Cliente123'),
+      email: 'cliente1@email.com',
+      status: 'active',
+    },
     create: {
       username: 'cliente1',
       email: 'cliente1@email.com',
@@ -69,7 +81,11 @@ async function main() {
 
   const client2User = await prisma.user.upsert({
     where: { username: 'cliente2' },
-    update: {},
+    update: {
+      passwordHash: hash('Cliente123'),
+      email: 'cliente2@email.com',
+      status: 'active',
+    },
     create: {
       username: 'cliente2',
       email: 'cliente2@email.com',
