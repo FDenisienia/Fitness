@@ -20,6 +20,7 @@ const ExerciseLibraryPage = lazy(() => import('./pages/admin/ExerciseLibraryPage
 const ConsultationsPage = lazy(() => import('./pages/admin/ConsultationsPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const RoutinesPage = lazy(() => import('./pages/admin/RoutinesPage'));
+const AdminProfilePage = lazy(() => import('./pages/admin/AdminProfilePage'));
 
 const CoachDashboard = lazy(() => import('./pages/coach/CoachDashboard'));
 const CoachRoutinesPage = lazy(() => import('./pages/coach/CoachRoutinesPage'));
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="planes" element={<AdminPlansPage />} />
           <Route path="biblioteca-ejercicios" element={<ExerciseLibraryPage />} />
           <Route path="consultas" element={<ConsultationsPage />} />
+          <Route path="perfil" element={<AdminProfilePage />} />
         </Route>
 
         <Route path="/coach" element={

@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma.js';
+import { config } from '../config/index.js';
 import { BadRequestError, NotFoundError } from '../utils/errors.js';
 import { assertPasswordPolicy } from '../utils/passwordPolicy.js';
 import {
@@ -22,7 +24,8 @@ function logAdminAction(event, payload) {
 }
 
 /**
- * Perfil del admin autenticado: username y/o contraseña (rehash + tokenVersion).
+ * Perfil del admin autenticado: nombre, apellido, email, username y/o contraseña.
+ * Si cambia la contraseña se incrementa tokenVersion y se devuelve un JWT nuevo.
  */
 export async function updateAdminOwnProfile(adminUserId, body) {
   const usernameRaw = body?.username;
@@ -33,19 +36,60 @@ export async function updateAdminOwnProfile(adminUserId, body) {
   const hasPassword =
     passwordRaw !== undefined && passwordRaw !== null && String(passwordRaw).trim() !== '';
 
-  if (!hasUsername && !hasPassword) {
-    throw new BadRequestError('Indicá al menos un campo: username o password');
-  }
-
   const user = await prisma.user.findUnique({
     where: { id: adminUserId },
-    select: { id: true, username: true, role: true },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      email: true,
+      name: true,
+      lastName: true,
+    },
   });
   if (!user || user.role !== 'admin') {
     throw new NotFoundError('Usuario');
   }
 
   const data = {};
+
+  if (body?.name !== undefined) {
+    const n = String(body.name).trim();
+    if (!n) {
+      throw new BadRequestError('El nombre no puede estar vacío.');
+    }
+    if (n !== user.name) {
+      data.name = n;
+    }
+  }
+
+  if (body?.lastName !== undefined) {
+    const nextLn =
+      body.lastName == null || String(body.lastName).trim() === ''
+        ? null
+        : String(body.lastName).trim();
+    const curLn = user.lastName ?? null;
+    if (nextLn !== curLn) {
+      data.lastName = nextLn;
+    }
+  }
+
+  if (body?.email !== undefined) {
+    const e = String(body.email).trim().toLowerCase();
+    if (!e) {
+      throw new BadRequestError('El correo no puede estar vacío.');
+    }
+    const cur = (user.email || '').trim().toLowerCase();
+    if (e !== cur) {
+      const taken = await prisma.user.findFirst({
+        where: { email: e, id: { not: adminUserId } },
+      });
+      if (taken) {
+        throw new BadRequestError('Ese correo electrónico ya está registrado.');
+      }
+      data.email = e;
+    }
+  }
 
   if (hasUsername) {
     const next = normalizeUsername(usernameRaw);
@@ -57,8 +101,8 @@ export async function updateAdminOwnProfile(adminUserId, body) {
       if (taken) {
         throw new BadRequestError('Ese nombre de usuario ya está en uso.');
       }
+      data.username = next;
     }
-    data.username = next;
   }
 
   if (hasPassword) {
@@ -66,6 +110,10 @@ export async function updateAdminOwnProfile(adminUserId, body) {
     assertPasswordPolicy(plain);
     data.passwordHash = await bcrypt.hash(plain, SALT_ROUNDS);
     data.tokenVersion = { increment: 1 };
+  }
+
+  if (Object.keys(data).length === 0) {
+    throw new BadRequestError('No indicáste ningún cambio.');
   }
 
   const updated = await prisma.user.update({
@@ -84,9 +132,26 @@ export async function updateAdminOwnProfile(adminUserId, body) {
     },
   });
 
-  logAdminAction('admin_profile_updated', { adminUserId, changedUsername: hasUsername, changedPassword: hasPassword });
+  let token = null;
+  if (hasPassword) {
+    token = jwt.sign(
+      {
+        userId: updated.id,
+        role: updated.role,
+        tv: updated.tokenVersion ?? 0,
+      },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+  }
 
-  return {
+  logAdminAction('admin_profile_updated', {
+    adminUserId,
+    changedFields: Object.keys(data),
+    changedPassword: hasPassword,
+  });
+
+  const profile = {
     id: updated.id,
     username: updated.username,
     email: updated.email,
@@ -97,6 +162,8 @@ export async function updateAdminOwnProfile(adminUserId, body) {
     active: updated.status === 'active',
     createdAt: updated.createdAt,
   };
+
+  return { user: profile, token };
 }
 
 export async function listCoachesForAdmin() {

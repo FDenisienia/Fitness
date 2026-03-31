@@ -2,8 +2,10 @@ import * as adminService from '../services/adminService.js';
 
 export async function updateMe(req, res, next) {
   try {
-    const user = await adminService.updateAdminOwnProfile(req.user.id, req.body);
-    res.json({ success: true, data: user });
+    const { user, token } = await adminService.updateAdminOwnProfile(req.user.id, req.body);
+    const payload = { success: true, data: user };
+    if (token) payload.token = token;
+    res.json(payload);
   } catch (err) {
     next(err);
   }

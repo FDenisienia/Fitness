@@ -20,10 +20,11 @@ const ROLE_LABELS = {
 const navItems = {
   admin: [
     { to: '/admin', label: 'Dashboard', exact: true },
+    { to: '/admin/perfil', label: 'Mi cuenta' },
     { to: '/admin/usuarios', label: 'Usuarios' },
     { to: '/admin/planes', label: 'Planes y cobros' },
     { to: '/admin/biblioteca-ejercicios', label: 'Biblioteca global' },
-    { to: '/admin/consultas', label: 'Soporte / Consultas' }
+    { to: '/admin/consultas', label: 'Soporte / Consultas' },
   ],
   coach: [
     { to: '/coach', label: 'Dashboard', exact: true },

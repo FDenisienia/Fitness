@@ -33,8 +33,44 @@ const PASSWORD_OPTIONAL = body('password')
     return true;
   });
 
-/** PUT /admin/me — al menos un campo con contenido lo valida `adminService.updateAdminOwnProfile`. */
-export const updateAdminMeValidator = [USERNAME_OPTIONAL, PASSWORD_OPTIONAL];
+const NAME_OPTIONAL = body('name')
+  .optional()
+  .isString()
+  .withMessage('Nombre inválido')
+  .bail()
+  .trim()
+  .isLength({ min: 1, max: 120 })
+  .withMessage('El nombre debe tener entre 1 y 120 caracteres.');
+
+const LAST_NAME_OPTIONAL = body('lastName')
+  .optional({ nullable: true })
+  .isString()
+  .withMessage('Apellido inválido')
+  .bail()
+  .trim()
+  .isLength({ max: 120 })
+  .withMessage('El apellido no puede superar 120 caracteres.');
+
+const EMAIL_OPTIONAL = body('email')
+  .optional()
+  .isString()
+  .bail()
+  .trim()
+  .notEmpty()
+  .withMessage('El correo no puede estar vacío.')
+  .bail()
+  .isEmail()
+  .normalizeEmail()
+  .withMessage('Correo electrónico inválido');
+
+/** PUT /admin/me — el servicio exige al menos un cambio real. */
+export const updateAdminMeValidator = [
+  NAME_OPTIONAL,
+  LAST_NAME_OPTIONAL,
+  EMAIL_OPTIONAL,
+  USERNAME_OPTIONAL,
+  PASSWORD_OPTIONAL,
+];
 
 /** PUT /admin/coaches/:id — mismos campos que update coach; password opcional. */
 export const updateAdminCoachValidator = [
