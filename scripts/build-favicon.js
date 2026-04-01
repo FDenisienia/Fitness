@@ -71,22 +71,38 @@ async function main() {
     .png()
     .toBuffer();
 
+  // Margen transparente para que el logo no toque el borde (la pestaña no recorte la punta).
+  const meta = await sharp(cropped).metadata();
+  const side = Math.max(meta.width || w, meta.height || h);
+  const safePad = Math.max(2, Math.round(side * 0.08));
+  const padded = await sharp(cropped)
+    .extend({
+      top: safePad,
+      bottom: safePad,
+      left: safePad,
+      right: safePad,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
   const out32 = join(publicDir, 'favicon.png');
   const out48 = join(publicDir, 'favicon-48.png');
   const outApple = join(publicDir, 'apple-touch-icon.png');
 
+  // contain = logo entero visible (cover recortaba la parte superior del icono).
   const resizeOpts = {
-    fit: 'cover',
-    position: 'centre',
+    fit: 'contain',
+    background: { r: 0, g: 0, b: 0, alpha: 0 },
   };
 
-  await sharp(cropped).resize(32, 32, resizeOpts).png().toFile(out32);
+  await sharp(padded).resize(32, 32, resizeOpts).png().toFile(out32);
 
-  await sharp(cropped).resize(48, 48, resizeOpts).png().toFile(out48);
+  await sharp(padded).resize(48, 48, resizeOpts).png().toFile(out48);
 
-  await sharp(cropped).resize(180, 180, resizeOpts).png().toFile(outApple);
+  await sharp(padded).resize(180, 180, resizeOpts).png().toFile(outApple);
 
-  console.log(`Favicon regenerado: ${w}x${h} recorte → 32/48/180 px, fondo transparente.`);
+  console.log(`Favicon regenerado: ${w}x${h} recorte → 32/48/180 px (contain + margen), fondo transparente.`);
 }
 
 main().catch((e) => {
