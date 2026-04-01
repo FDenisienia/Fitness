@@ -123,6 +123,8 @@ model Routine {
   status            String   @default("activa") // borrador | activa | archivada
   recommendations   String?  @db.Text
   warnings          String?  @db.Text
+  /// Nombres por sesión/bloque: JSON { "1": "Entrada en calor", "2": "Fuerza" }. Legacy: null → fallback "Sesión N".
+  sessionNames      Json?    @map("session_names")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

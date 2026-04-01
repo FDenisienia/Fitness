@@ -5,6 +5,7 @@
  */
 
 import { jsPDF } from 'jspdf';
+import { getSessionDisplayName } from './sessionNames';
 
 export const PDF_BRAND_NAME = import.meta.env.VITE_APP_BRAND_NAME || 'Athlento';
 export const PDF_TAGLINE = 'Entrená inteligente';
@@ -40,7 +41,12 @@ const AFTER_BLOCK_BAND = 3.5;
 const BLOCK_BAND_H = 6.5;
 
 function groupExercisesBySession(exercises) {
-  const sorted = [...(exercises || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const sorted = [...(exercises || [])].sort((a, b) => {
+    const sa = Math.max(1, a.sessionIndex ?? a.session ?? 1);
+    const sb = Math.max(1, b.sessionIndex ?? b.session ?? 1);
+    if (sa !== sb) return sa - sb;
+    return (a.order || 0) - (b.order || 0);
+  });
   if (!sorted.length) return [{ day: 1, exercises: [] }];
   const map = new Map();
   for (const ex of sorted) {
@@ -231,20 +237,25 @@ function drawFooter(doc, generatedAtLabel) {
   doc.setTextColor(...COL.text);
 }
 
-function drawBlockBand(doc, pageW, y, innerW, day, count, k) {
-  const bh = gy(BLOCK_BAND_H, k);
+function drawBlockBand(doc, pageW, y, innerW, day, count, k, sessionTitle) {
+  const display = sessionTitle || `Sesión ${day}`;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(fs(10.5, k));
+  const titleLines = doc.splitTextToSize(display, innerW - 52);
+  const lineH = gy(3.8, k);
+  const titleBlockH = Math.max(gy(4.5, k), titleLines.length * lineH);
+  const bh = Math.max(gy(BLOCK_BAND_H, k), titleBlockH + gy(3.2, k));
   doc.setFillColor(...COL.bgSurface);
   doc.setDrawColor(...COL.border);
   doc.setLineWidth(0.15);
   doc.roundedRect(M.L, y, innerW, bh, 1, 1, 'FD');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(fs(10.5, k));
   doc.setTextColor(...COL.accent);
-  doc.text(`Bloque ${day}`, M.L + 2, y + bh * 0.62);
+  doc.text(titleLines, M.L + 2, y + gy(5, k));
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(fs(8.2, k));
   doc.setTextColor(...COL.dim);
-  doc.text(`${count} ejercicio${count !== 1 ? 's' : ''}`, pageW - M.R - 2, y + bh * 0.62, { align: 'right' });
+  doc.text(`(Bloque ${day})`, M.L + 2, y + gy(5, k) + titleLines.length * lineH + gy(0.8, k));
+  doc.text(`${count} ejercicio${count !== 1 ? 's' : ''}`, pageW - M.R - 2, y + bh * 0.55, { align: 'right' });
   doc.setTextColor(...COL.text);
   return y + bh + gy(AFTER_BLOCK_BAND, k);
 }
@@ -465,7 +476,7 @@ export async function buildRoutinePdf(opts) {
   let globalIndex = 0;
 
   for (const { day, exercises: dayExs } of dayBlocks) {
-    y = drawBlockBand(doc, pageW, y, innerW, day, dayExs.length, k);
+    y = drawBlockBand(doc, pageW, y, innerW, day, dayExs.length, k, getSessionDisplayName(day, routine.sessionNames));
     for (const ex of dayExs) {
       globalIndex += 1;
       y = drawExerciseCard(doc, ex, globalIndex, y, innerW, k) + gy(GAP_AFTER_EXERCISE, k);

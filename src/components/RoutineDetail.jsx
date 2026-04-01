@@ -4,6 +4,7 @@ import { downloadRoutinePdf } from '../utils/routinePdfExport';
 import { useAuth } from '../context/AuthContext';
 import { plannedWorkoutsApi } from '../api';
 import { calcRoutineCalories } from '../utils/routineCalories';
+import { getSessionDisplayName } from '../utils/sessionNames';
 import VideoCard from './VideoCard';
 
 // Iconos SVG
@@ -89,7 +90,12 @@ const IconChevronDown = () => (
 
 // Agrupa ejercicios por bloque (sessionIndex). Por defecto bloque 1 → varios ejercicios en el mismo bloque.
 function groupExercisesBySession(exercises) {
-  const sorted = [...(exercises || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const sorted = [...(exercises || [])].sort((a, b) => {
+    const sa = Math.max(1, a.sessionIndex ?? a.session ?? 1);
+    const sb = Math.max(1, b.sessionIndex ?? b.session ?? 1);
+    if (sa !== sb) return sa - sb;
+    return (a.order || 0) - (b.order || 0);
+  });
   if (!sorted.length) return [{ day: 1, exercises: [] }];
   const map = new Map();
   for (const ex of sorted) {
@@ -157,7 +163,12 @@ export default function RoutineDetail({
     return plannedWorkoutsForRoutine.find((p) => p.id === selectedPlanId) || null;
   }, [plannedWorkout, selectedPlanId, plannedWorkoutsForRoutine]);
 
-  const exercises = (routine?.exercises || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const exercises = [...(routine?.exercises || [])].sort((a, b) => {
+    const sa = Math.max(1, a.sessionIndex ?? a.session ?? 1);
+    const sb = Math.max(1, b.sessionIndex ?? b.session ?? 1);
+    if (sa !== sb) return sa - sb;
+    return (a.order || 0) - (b.order || 0);
+  });
   const dayBlocks = useMemo(() => groupExercisesBySession(exercises), [exercises]);
   const { total: totalKcal, byExercise } = calcRoutineCalories(routine, []);
 
@@ -372,9 +383,11 @@ export default function RoutineDetail({
           >
             <div className="routine-day-number">{day}</div>
             <div className="routine-day-header-text">
-              <div className="routine-day-title">Bloque {day}</div>
+              <div className="routine-day-title">
+                {getSessionDisplayName(day, routine.sessionNames)}
+              </div>
               <div className="routine-day-subtitle">
-                {dayExs.length} ejercicio{dayExs.length !== 1 ? 's' : ''}
+                (Bloque {day}) · {dayExs.length} ejercicio{dayExs.length !== 1 ? 's' : ''}
                 {routine.daysCount ? ` · ${routine.daysCount} días/semana` : ''}
               </div>
             </div>

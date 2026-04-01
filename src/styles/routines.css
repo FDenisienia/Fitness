@@ -1124,18 +1124,19 @@
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   margin-bottom: 0.75rem;
+  transition: box-shadow 0.18s ease, opacity 0.15s ease;
 }
 
 .modal.routine-form-modal .exercise-row-grid {
   display: grid;
-  grid-template-columns: 1fr 118px 70px 70px 95px 1fr 85px;
+  grid-template-columns: 52px 1fr 118px 70px 70px 95px 1fr 85px;
   gap: 0.75rem 1rem;
   align-items: end;
 }
 
 @media (max-width: 991px) {
   .modal.routine-form-modal .exercise-row-grid {
-    grid-template-columns: 1fr 110px 65px 65px 85px 1fr 75px;
+    grid-template-columns: 48px 1fr 110px 65px 65px 85px 1fr 75px;
   }
 }
 
@@ -1144,6 +1145,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
   }
+  .modal.routine-form-modal .exercise-row-grid .exercise-col-reorder { grid-column: 1 / -1; }
   .modal.routine-form-modal .exercise-row-grid .exercise-col-name { grid-column: 1 / -1; }
   .modal.routine-form-modal .exercise-row-grid .exercise-col-video { grid-column: 1 / -1; }
   .modal.routine-form-modal .exercise-row-grid .exercise-col-delete { grid-column: 2; justify-self: end; }
@@ -1151,7 +1153,7 @@
 
 .modal.routine-form-modal .exercise-row-header {
   display: grid;
-  grid-template-columns: 1fr 118px 70px 70px 95px 1fr 85px;
+  grid-template-columns: 52px 1fr 118px 70px 70px 95px 1fr 85px;
   gap: 0.75rem 1rem;
   padding: 0 1.25rem 0.5rem;
   font-size: 0.7rem;
@@ -1163,7 +1165,7 @@
 
 @media (max-width: 991px) {
   .modal.routine-form-modal .exercise-row-header {
-    grid-template-columns: 1fr 110px 65px 65px 85px 1fr 75px;
+    grid-template-columns: 48px 1fr 110px 65px 65px 85px 1fr 75px;
   }
 }
 
@@ -1183,6 +1185,90 @@
 
 .modal.routine-form-modal .btn-add-exercise {
   margin-top: 0.5rem;
+}
+
+.modal.routine-form-modal .exercise-col-reorder {
+  align-self: end;
+}
+
+.modal.routine-form-modal .exercise-reorder-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.modal.routine-form-modal .exercise-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  color: var(--white-dim);
+  border: none;
+  background: transparent;
+  padding: 0.15rem;
+  border-radius: var(--radius-sm);
+}
+
+.modal.routine-form-modal .exercise-drag-handle:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.modal.routine-form-modal .exercise-drag-handle:active {
+  cursor: grabbing;
+}
+
+.modal.routine-form-modal .exercise-move-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.modal.routine-form-modal .exercise-move-btn {
+  padding: 0.12rem 0.35rem;
+  line-height: 1.2;
+  min-height: auto;
+  font-size: 0.75rem;
+}
+
+.modal.routine-form-modal .exercise-row-card--dragging {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 140, 66, 0.45);
+}
+
+.routine-session-block {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--orange-ghost);
+}
+
+.routine-session-block:last-of-type {
+  border-bottom: none;
+}
+
+.routine-session-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.routine-session-block-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.routine-session-block-subtitle {
+  font-size: 0.85rem;
+}
+
+.modal.routine-form-modal .btn-add-exercise-session {
+  margin-top: 0.25rem;
 }
 
 /* —— Calendario coach: modal del día —— */

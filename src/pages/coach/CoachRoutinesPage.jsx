@@ -5,16 +5,22 @@ import { useAuth } from '../../context/AuthContext';
 import { routinesApi, clientsApi, exercisesApi, clientRoutinesApi } from '../../api';
 import { OBJECTIVES, LEVELS, STIMULUS_TYPES } from '../../data/mockData';
 import { clientDisplayName } from '../../utils/clientDisplay';
-import ExerciseAutocomplete from '../../components/ExerciseAutocomplete';
+import {
+  buildSessionNamesPayload,
+  getSessionIndicesFromExercises,
+  mergeSessionNameKeys,
+} from '../../utils/sessionNames';
+import { normalizeExercisesFlatOrder } from '../../utils/routineExerciseOrder';
+import RoutineExerciseFormBlocks from '../../components/coach/RoutineExerciseFormBlocks';
 
-const getEmptyExercise = () => ({
+const getEmptyExercise = (sessionIndex = 1) => ({
   id: `ex-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   name: '',
   sets: 3,
   reps: '10',
   rest: '60 seg',
-  order: 1,
-  sessionIndex: 1,
+  order: 0,
+  sessionIndex: Math.max(1, parseInt(String(sessionIndex), 10) || 1),
   videoUrl: '',
   exerciseId: null,
 });
@@ -35,7 +41,7 @@ export default function CoachRoutinesPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     name: '', description: '', objective: '', level: '', frequencyPerWeek: 4, durationMinutes: 60, daysCount: 4, status: 'activa',
-    recommendations: '', exercises: [getEmptyExercise()],
+    recommendations: '', sessionNames: { '1': '' }, exercises: [getEmptyExercise()],
   });
   const [showAssign, setShowAssign] = useState(!!assignClientId);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
@@ -85,44 +91,72 @@ export default function CoachRoutinesPage() {
     if (routine) {
       setEditing(routine);
       const exs = routine.exercises?.length
-        ? routine.exercises.map(ex => ({
-          ...ex,
-          id: ex.id || `ex-${Date.now()}`,
-          exerciseId: ex.exerciseId || null,
-          name: ex.name || ex.customName || '',
-          sessionIndex: ex.sessionIndex ?? 1,
-        }))
+        ? normalizeExercisesFlatOrder(
+            routine.exercises.map((ex) => ({
+              ...ex,
+              id: ex.id || `ex-${Date.now()}`,
+              exerciseId: ex.exerciseId || null,
+              name: ex.name || ex.customName || '',
+              sessionIndex: ex.sessionIndex ?? 1,
+            }))
+          )
         : [getEmptyExercise()];
-      setForm({ ...routine, exercises: exs }); // estimulo -> stimulus
+      setForm({
+        ...routine,
+        exercises: exs,
+        sessionNames: mergeSessionNameKeys(routine.sessionNames || {}, exs),
+      });
     } else {
       setEditing(null);
+      const ex0 = getEmptyExercise();
       setForm({
         name: '', description: '', objective: '', level: '', frequencyPerWeek: 4, durationMinutes: 60, daysCount: 4, status: 'activa',
-        recommendations: '', exercises: [getEmptyExercise()],
+        recommendations: '', sessionNames: { '1': '' }, exercises: [ex0],
       });
     }
     setShowModal(true);
   };
 
-  const mapExerciseToSave = (ex, i) => ({
+  const mapExerciseToSave = (ex) => ({
     exerciseId: ex.exerciseId || null,
     customName: ex.name || ex.customName || null,
     sets: parseInt(ex.sets, 10) || 3,
     reps: ex.reps || '10',
     rest: ex.rest || null,
     videoUrl: ex.videoUrl || null,
-    order: i,
+    order: ex.order ?? 0,
     sessionIndex:
       ex.sessionIndex != null && ex.sessionIndex !== ''
         ? Math.max(1, parseInt(String(ex.sessionIndex), 10) || 1)
         : 1,
   });
 
+  const patchExercises = (updater) => {
+    setForm((f) => {
+      const raw = typeof updater === 'function' ? updater(f.exercises) : updater;
+      const normalized = normalizeExercisesFlatOrder(raw);
+      return {
+        ...f,
+        exercises: normalized,
+        sessionNames: mergeSessionNameKeys(f.sessionNames, normalized),
+      };
+    });
+  };
+
   const handleSave = async () => {
     if (!form.name) return;
+    const exercisesList = form.exercises || [];
+    const namePayload = buildSessionNamesPayload(form.sessionNames, exercisesList);
+    const indices = getSessionIndicesFromExercises(exercisesList);
+    for (const n of indices) {
+      if (!namePayload[String(n)]) {
+        alert(`Completá el nombre de la sesión del bloque ${n}.`);
+        return;
+      }
+    }
     setSaving(true);
     try {
-      const exercisesToSave = (form.exercises || []).map(mapExerciseToSave);
+      const exercisesToSave = normalizeExercisesFlatOrder(exercisesList).map(mapExerciseToSave);
       const routineData = {
         name: form.name,
         description: form.description || null,
@@ -134,6 +168,7 @@ export default function CoachRoutinesPage() {
         stimulus: form.estimulo || form.stimulus || null,
         status: form.status || 'activa',
         recommendations: form.recommendations || null,
+        sessionNames: namePayload,
         exercises: exercisesToSave,
       };
       if (editing) {
@@ -157,14 +192,15 @@ export default function CoachRoutinesPage() {
       await routinesApi.create({
         ...r,
         name: r.name + ' (copia)',
-        exercises: (r.exercises || []).map((ex, i) => ({
+        sessionNames: r.sessionNames ? { ...r.sessionNames } : undefined,
+        exercises: normalizeExercisesFlatOrder(r.exercises || []).map((ex) => ({
           exerciseId: ex.exerciseId,
           customName: ex.name || ex.customName,
           sets: ex.sets,
           reps: ex.reps,
           rest: ex.rest,
           videoUrl: ex.videoUrl,
-          order: i,
+          order: ex.order ?? 0,
           sessionIndex: ex.sessionIndex ?? 1,
         })),
       });
@@ -290,76 +326,38 @@ export default function CoachRoutinesPage() {
             </Row>
           </div>
           <div className="form-section">
-            <div className="form-section-title">Ejercicios</div>
-            <p className="small text-muted mb-3">Busca en la biblioteca o escribe el nombre manualmente</p>
-            <div className="exercise-row-header">
-              <span>Ejercicio</span><span>Bloque</span><span>Series</span><span>Reps</span><span>Descanso</span><span>URL video</span><span></span>
-            </div>
-            {form.exercises?.map((ex, i) => (
-              <div key={ex.id} className="exercise-row-card">
-                <div className="exercise-row-grid">
-                  <div className="exercise-col-name">
-                    <Form.Label className="d-md-none small">Ejercicio</Form.Label>
-                    <ExerciseAutocomplete
-                      value={ex.name}
-                      libraryExerciseId={ex.exerciseId}
-                      library={exerciseLibrary}
-                      placeholder="Buscar o escribir..."
-                      onChange={(name) => setForm(f => ({ ...f, exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, name } : ee) }))}
-                      onSelectFromLibrary={(libEx) => {
-                        if (!libEx) {
-                          setForm(f => ({ ...f, exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, exerciseId: null } : ee) }));
-                          return;
-                        }
-                        setForm(f => ({
-                          ...f,
-                          exercises: f.exercises.map((ee, ii) => ii === i ? {
-                            ...ee,
-                            name: libEx.name,
-                            videoUrl: libEx.videoUrl ?? ee.videoUrl,
-                            exerciseId: libEx.id,
-                          } : ee)
-                        }));
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Form.Label className="d-md-none small">Bloque</Form.Label>
-                    <Form.Select
-                      value={String(ex.sessionIndex ?? 1)}
-                      onChange={e => setForm(f => ({
-                        ...f,
-                        exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, sessionIndex: parseInt(e.target.value, 10) || 1 } : ee),
-                      }))}
-                    >
-                      {Array.from({ length: 12 }, (_, n) => n + 1).map((num) => (
-                        <option key={num} value={num}>Bloque {num}</option>
-                      ))}
-                    </Form.Select>
-                  </div>
-                  <div>
-                    <Form.Label className="d-md-none small">Series</Form.Label>
-                    <Form.Control placeholder="S" value={ex.sets} onChange={e => setForm(f => ({ ...f, exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, sets: e.target.value } : ee) }))} />
-                  </div>
-                  <div>
-                    <Form.Label className="d-md-none small">Reps</Form.Label>
-                    <Form.Control placeholder="R" value={ex.reps} onChange={e => setForm(f => ({ ...f, exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, reps: e.target.value } : ee) }))} />
-                  </div>
-                  <div>
-                    <Form.Label className="d-md-none small">Descanso</Form.Label>
-                    <Form.Control placeholder="60 seg" value={ex.rest} onChange={e => setForm(f => ({ ...f, exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, rest: e.target.value } : ee) }))} />
-                  </div>
-                  <div className="exercise-col-video">
-                    <Form.Label className="d-md-none small">URL video</Form.Label>
-                    <Form.Control placeholder="https://..." value={ex.videoUrl || ''} onChange={e => setForm(f => ({ ...f, exercises: f.exercises.map((ee, ii) => ii === i ? { ...ee, videoUrl: e.target.value } : ee) }))} />
-                  </div>
-                  <div className="exercise-col-delete d-flex align-items-end">
-                    <Button size="sm" variant="outline-danger" className="w-100" onClick={() => setForm(f => ({ ...f, exercises: f.exercises.filter((_, ii) => ii !== i) }))} title="Eliminar ejercicio">Eliminar</Button>
-                  </div>
-                </div>
-              </div>
+            <div className="form-section-title">Nombres de sesión (bloques)</div>
+            <p className="small text-muted mb-3">
+              Un nombre por cada bloque que uses en la tabla de ejercicios. Podés cambiarlo cuando quieras; el orden lo define el número de bloque, no el nombre.
+            </p>
+            {getSessionIndicesFromExercises(form.exercises || []).map((num) => (
+              <Form.Group key={num} className="mb-2">
+                <Form.Label className="small mb-1">Bloque {num}</Form.Label>
+                <Form.Control
+                  placeholder="Ej: Entrada en calor, Fuerza, Cardio, Core"
+                  value={form.sessionNames?.[String(num)] ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      sessionNames: { ...f.sessionNames, [String(num)]: e.target.value },
+                    }))
+                  }
+                />
+              </Form.Group>
             ))}
-            <Button size="sm" variant="outline-primary" className="btn-add-exercise" onClick={() => setForm(f => ({ ...f, exercises: [...(f.exercises || []), getEmptyExercise()] }))}>+ Añadir ejercicio</Button>
+          </div>
+          <div className="form-section">
+            <div className="form-section-title">Ejercicios</div>
+            <p className="small text-muted mb-3">
+              Por bloque: arrastrá con el asa ⋮⋮ o usá ↑ ↓ para ordenar. Solo dentro del mismo bloque.
+            </p>
+            <RoutineExerciseFormBlocks
+              exercises={form.exercises || []}
+              patchExercises={patchExercises}
+              sessionNames={form.sessionNames}
+              exerciseLibrary={exerciseLibrary}
+              getEmptyExercise={getEmptyExercise}
+            />
           </div>
           <div className="form-section">
             <div className="form-section-title">Recomendaciones</div>

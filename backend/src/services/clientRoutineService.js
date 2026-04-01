@@ -57,7 +57,7 @@ export async function listClientRoutines(clientId, coachId = null) {
     include: {
       routine: {
         include: {
-          routineExercises: { include: { exercise: true }, orderBy: { orderIndex: 'asc' } },
+          routineExercises: { include: { exercise: true }, orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }] },
         },
       },
     },
