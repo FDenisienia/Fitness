@@ -17,7 +17,8 @@ function bboxNonTransparent(data, width, height, channels) {
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * channels;
       const a = channels === 4 ? data[i + 3] : 255;
-      if (a > 8) {
+      // Incluir anti-alias (alpha baja) para no recortar colas del logo
+      if (a > 0) {
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
@@ -40,7 +41,8 @@ async function main() {
   const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width, height, channels } = info;
   const newData = Buffer.from(data);
-  const BG = 55;
+  // Solo fondo casi negro: no borrar bordes oscuros del naranja (antes se cortaba la cola).
+  const BG_MAX = 32;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -48,7 +50,7 @@ async function main() {
       const r = newData[i];
       const g = newData[i + 1];
       const b = newData[i + 2];
-      if (r < BG && g < BG && b < BG) {
+      if (r <= BG_MAX && g <= BG_MAX && b <= BG_MAX) {
         newData[i + 3] = 0;
       }
     }
@@ -60,7 +62,7 @@ async function main() {
     process.exit(1);
   }
 
-  const pad = 1;
+  const pad = 6;
   const left = Math.max(0, box.minX - pad);
   const top = Math.max(0, box.minY - pad);
   const w = Math.min(width - left, box.maxX - box.minX + 1 + pad * 2);
@@ -71,10 +73,10 @@ async function main() {
     .png()
     .toBuffer();
 
-  // Margen transparente para que el logo no toque el borde (la pestaña no recorte la punta).
+  // Margen mínimo: logo lo más grande posible en la pestaña sin recortes (antes 8% achicaba mucho).
   const meta = await sharp(cropped).metadata();
   const side = Math.max(meta.width || w, meta.height || h);
-  const safePad = Math.max(2, Math.round(side * 0.08));
+  const safePad = Math.max(2, Math.round(side * 0.025));
   const padded = await sharp(cropped)
     .extend({
       top: safePad,
