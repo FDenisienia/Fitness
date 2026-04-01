@@ -125,3 +125,4 @@ Copia la URL HTTPS que te da el host (ej. `https://xxx.up.railway.app`). El fron
 | `P1012` / `url` no soportada en `schema.prisma` | Estás usando **Prisma 7** contra un proyecto en **Prisma 6**. Ejecuta migraciones desde la carpeta `backend` con la dependencia del proyecto (`npm run db:migrate`), no `npx prisma` suelto actualizado a v7. |
 | `prisma: not found` en el servidor | **Root Directory** del servicio no es `backend`, o no se ejecutó `npm ci` en esa app. |
 | Login / API 401 o red incorrecta | `VITE_API_URL` mal (falta `/api` o HTTPS), o JWT/CORS mal configurados. |
+| **500** en `/api/routines` (u otras rutas que lean tablas nuevas) | La base no tiene las migraciones aplicadas. Ejecuta `npx prisma migrate deploy` contra `DATABASE_URL` (el script `npm start` del backend ya lo hace antes de arrancar; si el error persiste, revisa logs del deploy y que `DATABASE_URL` apunte a la misma BD). |
