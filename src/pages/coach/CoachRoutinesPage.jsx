@@ -328,7 +328,7 @@ export default function CoachRoutinesPage() {
           <div className="form-section">
             <div className="form-section-title">Nombres de sesión (bloques)</div>
             <p className="small text-muted mb-3">
-              Un nombre por cada bloque que uses en la tabla de ejercicios. Podés cambiarlo cuando quieras; el orden lo define el número de bloque, no el nombre.
+              Un nombre por cada bloque. Usá «Añadir bloque» debajo de la tabla para crear un grupo nuevo con sus propios ejercicios; el número de bloque define el orden, no el nombre.
             </p>
             {getSessionIndicesFromExercises(form.exercises || []).map((num) => (
               <Form.Group key={num} className="mb-2">
@@ -349,7 +349,7 @@ export default function CoachRoutinesPage() {
           <div className="form-section">
             <div className="form-section-title">Ejercicios</div>
             <p className="small text-muted mb-3">
-              Por bloque: arrastrá con el asa ⋮⋮ o usá ↑ ↓ para ordenar. Solo dentro del mismo bloque.
+              Cada bloque es un grupo de ejercicios (calentamiento, fuerza, etc.). Podés tener varios bloques; dentro de cada uno, arrastrá con ⋮⋮ o usá ↑ ↓. Para mover un ejercicio a otro bloque, usá el selector «Bloque» en la fila.
             </p>
             <RoutineExerciseFormBlocks
               exercises={form.exercises || []}

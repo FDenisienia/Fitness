@@ -14,6 +14,20 @@ export function getSessionIndicesFromExercises(exercises) {
   return [...set].sort((a, b) => a - b);
 }
 
+/** Siguiente índice de bloque (p. ej. si existen 1 y 2 → 3). */
+export function getNextSessionIndex(exercises) {
+  const indices = getSessionIndicesFromExercises(exercises);
+  if (!indices.length) return 1;
+  return Math.max(...indices) + 1;
+}
+
+/** Índice del último bloque usado (para añadir ejercicios al bloque activo final). */
+export function getLastSessionIndex(exercises) {
+  const indices = getSessionIndicesFromExercises(exercises);
+  if (!indices.length) return 1;
+  return Math.max(...indices);
+}
+
 /**
  * @param {number} sessionIndex
  * @param {Record<string, string>|null|undefined} sessionNames

@@ -17,7 +17,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ExerciseAutocomplete from '../ExerciseAutocomplete';
-import { getSessionDisplayName, getSessionIndicesFromExercises } from '../../utils/sessionNames';
+import {
+  getSessionDisplayName,
+  getSessionIndicesFromExercises,
+  getLastSessionIndex,
+  getNextSessionIndex,
+} from '../../utils/sessionNames';
 import {
   exercisesForSession,
   moveExerciseInSession,
@@ -322,20 +327,36 @@ export default function RoutineExerciseFormBlocks({
         );
       })}
 
-      <Button
-        size="sm"
-        variant="outline-primary"
-        className="btn-add-exercise"
-        type="button"
-        onClick={() =>
-          patchExercises((prev) => {
-            const next = [...prev, getEmptyExercise(1)];
-            return normalizeExercisesFlatOrder(next);
-          })
-        }
-      >
-        + Añadir ejercicio (bloque 1)
-      </Button>
+      <div className="routine-exercise-blocks-actions d-flex flex-wrap gap-2 align-items-center mt-2">
+        <Button
+          size="sm"
+          variant="primary"
+          className="btn-add-block"
+          type="button"
+          onClick={() =>
+            patchExercises((prev) => {
+              const nextIdx = getNextSessionIndex(prev);
+              return normalizeExercisesFlatOrder([...prev, getEmptyExercise(nextIdx)]);
+            })
+          }
+        >
+          + Añadir bloque
+        </Button>
+        <Button
+          size="sm"
+          variant="outline-primary"
+          className="btn-add-exercise"
+          type="button"
+          onClick={() =>
+            patchExercises((prev) => {
+              const lastIdx = getLastSessionIndex(prev);
+              return normalizeExercisesFlatOrder([...prev, getEmptyExercise(lastIdx)]);
+            })
+          }
+        >
+          + Añadir ejercicio al último bloque
+        </Button>
+      </div>
     </div>
   );
 }
