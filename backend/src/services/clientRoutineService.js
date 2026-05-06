@@ -1,5 +1,10 @@
 import { prisma } from '../utils/prisma.js';
-import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors.js';
+import {
+  NotFoundError,
+  ForbiddenError,
+  BadRequestError,
+  ServiceUnavailableError,
+} from '../utils/errors.js';
 import { formatRoutine } from './routineService.js';
 
 const clientRoutineExerciseInclude = {
@@ -35,6 +40,7 @@ function isCloneSchemaUnavailableError(err) {
   const code = err?.code;
   const msg = String(err?.message || '').toLowerCase();
   if (code === 'P2010') return true;
+  if (code === 'P2021') return true; // tabla no existe en BD (migración no aplicada)
   if (msg.includes("doesn't exist") || msg.includes('does not exist')) return true;
   if (msg.includes('unknown table')) return true;
   if (msg.includes('1146')) return true;
@@ -289,33 +295,44 @@ export async function assignRoutine(clientId, routineId, coachId, assignedById, 
     routine.routineExercises || []
   );
 
-  await prisma.$transaction(async (tx) => {
-    const created = await tx.clientRoutine.create({
-      data: {
-        clientId,
-        routineId,
-        assignedById: assignedById || coachId,
-        active: true,
-        startDate,
-      },
-    });
-    await cloneExercisesIntoAssignment(
-      tx,
-      created.id,
-      routine.routineExercises || [],
-      weightsMap
-    );
-    if (assignmentDate) {
-      await tx.plannedWorkout.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      const created = await tx.clientRoutine.create({
         data: {
           clientId,
           routineId,
-          date: new Date(assignmentDate),
+          assignedById: assignedById || coachId,
+          active: true,
+          startDate,
         },
       });
+      await cloneExercisesIntoAssignment(
+        tx,
+        created.id,
+        routine.routineExercises || [],
+        weightsMap
+      );
+      if (assignmentDate) {
+        await tx.plannedWorkout.create({
+          data: {
+            clientId,
+            routineId,
+            date: new Date(assignmentDate),
+          },
+        });
+      }
+    });
+    return await listClientRoutines(clientId, coachId);
+  } catch (err) {
+    if (isCloneSchemaUnavailableError(err)) {
+      throw new ServiceUnavailableError(
+        'No se pueden asignar rutinas con pesos por serie porque en el servidor faltan las tablas ' +
+          '`client_routine_exercises` / `client_routine_exercise_sets`. Aplicá las migraciones en el backend ' +
+          '(por ejemplo `npx prisma migrate deploy` en la carpeta del API) y volvé a intentar.'
+      );
     }
-  });
-  return listClientRoutines(clientId, coachId);
+    throw err;
+  }
 }
 
 export async function listClientRoutines(clientId, coachId = null) {
