@@ -159,16 +159,26 @@ export default function RoutineDetail({
   const [markedComplete, setMarkedComplete] = useState(false);
   /** Cuando no hay ?date= en la URL, el usuario elige qué día planificado completar */
   const [selectedPlanId, setSelectedPlanId] = useState(null);
-  /** null = todos los bloques plegados */
+  /** null = todos plegados; al cargar rutina se abre el primer bloque */
   const [expandedSession, setExpandedSession] = useState(null);
   /** por ejercicio: si el vídeo está desplegado */
   const [videoOpenByKey, setVideoOpenByKey] = useState({});
 
   useEffect(() => {
-    setExpandedSession(null);
+    const exs = routine?.exercises || [];
+    if (!routine?.id || !exs.length) {
+      setExpandedSession(null);
+    } else {
+      let minDay = Infinity;
+      for (const ex of exs) {
+        const s = Math.max(1, ex.sessionIndex ?? ex.session ?? 1);
+        if (s < minDay) minDay = s;
+      }
+      setExpandedSession(Number.isFinite(minDay) ? minDay : 1);
+    }
     setVideoOpenByKey({});
     setMarkedComplete(false);
-  }, [routine?.id]);
+  }, [routine?.id, routine?.exercises?.length]);
 
   useEffect(() => {
     if (plannedWorkout?.id) {
@@ -412,7 +422,7 @@ export default function RoutineDetail({
         </div>
       )}
 
-      {/* Acordeón por bloque — todos plegados al entrar */}
+      {/* Acordeón por bloque — primer bloque abierto al entrar */}
       {dayBlocks.map(({ day, exercises: dayExs }) => {
         const isExpanded = expandedSession === day;
         return (
