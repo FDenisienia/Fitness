@@ -746,7 +746,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--white-dim);
+  color: var(--white-pure);
   margin: 0 0 0.75rem 0;
 }
 
@@ -764,7 +764,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--white-dim);
+  color: var(--white-muted);
   margin-bottom: 0.25rem;
 }
 
@@ -779,25 +779,31 @@
 
 .ex-detail-info-text {
   font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--white-muted);
+  line-height: 1.55;
+  color: var(--white-pure);
   margin: 0;
 }
 
 .ex-detail-info-obs {
   padding: 0.65rem 0.85rem;
-  background: rgba(255, 170, 0, 0.15);
-  border: 0.5px solid var(--warning-text);
+  background: rgba(255, 92, 0, 0.14);
+  border: 0.5px solid rgba(255, 122, 40, 0.55);
   border-radius: var(--radius-md);
   margin-top: 0.5rem;
 }
 
 .ex-detail-info-obs .ex-detail-info-text {
-  color: var(--warning-text);
+  color: var(--white-pure);
+  font-weight: 500;
 }
 
 .ex-detail-info-obs .ex-detail-info-label {
-  color: var(--warning-text);
+  color: var(--white-pure);
+  font-weight: 700;
+}
+
+.ex-detail-info-obs .ex-detail-info-label svg {
+  color: var(--orange-light);
 }
 
 .video-card {

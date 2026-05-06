@@ -22,6 +22,26 @@ const assignmentFullInclude = {
   },
 };
 
+/** Solo rutina plantilla (sin tablas de instancia por cliente). */
+const assignmentRoutineOnlyInclude = {
+  routine: assignmentFullInclude.routine,
+};
+
+/**
+ * BD sin migración de instancias: Prisma/MySQL falla al incluir `clientRoutineExercises`.
+ * Evitamos 500 en /api/routines devolviendo la vista de plantilla hasta que existan las tablas.
+ */
+function isCloneSchemaUnavailableError(err) {
+  const code = err?.code;
+  const msg = String(err?.message || '').toLowerCase();
+  if (code === 'P2010') return true;
+  if (msg.includes("doesn't exist") || msg.includes('does not exist')) return true;
+  if (msg.includes('unknown table')) return true;
+  if (msg.includes('1146')) return true;
+  if (msg.includes('client_routine_exercise')) return true;
+  return false;
+}
+
 /**
  * Normaliza pesos por RoutineExercise.id (plantilla). Valores no numéricos → null.
  * @param {unknown} raw
@@ -173,15 +193,40 @@ export function formatRoutineForClientView(assignment) {
 }
 
 export async function findActiveAssignmentForClientRoutine(clientId, routineId) {
-  let a = await prisma.clientRoutine.findFirst({
-    where: { clientId, routineId, active: true },
-    include: assignmentFullInclude,
-  });
-  if (!a) return null;
-  if (!a.clientRoutineExercises?.length) {
-    const ensured = await ensureClonedExercisesForAssignment(a.id);
-    if (ensured) a = ensured;
+  const where = { clientId, routineId, active: true };
+  let a;
+  let skippedCloneInclude = false;
+  try {
+    a = await prisma.clientRoutine.findFirst({
+      where,
+      include: assignmentFullInclude,
+    });
+  } catch (err) {
+    if (!isCloneSchemaUnavailableError(err)) throw err;
+    skippedCloneInclude = true;
+    a = await prisma.clientRoutine.findFirst({
+      where,
+      include: assignmentRoutineOnlyInclude,
+    });
   }
+  if (!a) return null;
+
+  if (skippedCloneInclude) {
+    return { ...a, clientRoutineExercises: [] };
+  }
+
+  if (!a.clientRoutineExercises?.length) {
+    try {
+      const ensured = await ensureClonedExercisesForAssignment(a.id);
+      if (ensured) return ensured;
+    } catch (err2) {
+      if (isCloneSchemaUnavailableError(err2)) {
+        return { ...a, clientRoutineExercises: [] };
+      }
+      throw err2;
+    }
+  }
+
   return a;
 }
 
@@ -261,28 +306,49 @@ export async function listClientRoutines(clientId, coachId = null) {
     const client = await prisma.client.findUnique({ where: { id: clientId } });
     if (!client || client.coachId !== coachId) throw new ForbiddenError('Acceso denegado');
   }
-  const assignments = await prisma.clientRoutine.findMany({
-    where,
-    include: {
-      routine: {
-        include: {
-          routineExercises: { include: { exercise: true }, orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }] },
+
+  let assignments;
+  let skippedCloneInclude = false;
+  try {
+    assignments = await prisma.clientRoutine.findMany({
+      where,
+      include: {
+        routine: {
+          include: {
+            routineExercises: { include: { exercise: true }, orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }] },
+          },
+        },
+        clientRoutineExercises: {
+          include: clientRoutineExerciseInclude,
+          orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }],
         },
       },
-      clientRoutineExercises: {
-        include: clientRoutineExerciseInclude,
-        orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }],
-      },
-    },
-    orderBy: { assignedAt: 'desc' },
-  });
+      orderBy: { assignedAt: 'desc' },
+    });
+  } catch (err) {
+    if (!isCloneSchemaUnavailableError(err)) throw err;
+    skippedCloneInclude = true;
+    assignments = await prisma.clientRoutine.findMany({
+      where,
+      include: assignmentRoutineOnlyInclude,
+      orderBy: { assignedAt: 'desc' },
+    });
+  }
 
   const enriched = [];
   for (const a of assignments) {
-    let row = a;
-    if (a.active && (!a.clientRoutineExercises || a.clientRoutineExercises.length === 0)) {
-      const ensured = await ensureClonedExercisesForAssignment(a.id);
-      if (ensured) row = ensured;
+    let row = skippedCloneInclude ? { ...a, clientRoutineExercises: [] } : a;
+    if (!skippedCloneInclude && a.active && (!a.clientRoutineExercises || a.clientRoutineExercises.length === 0)) {
+      try {
+        const ensured = await ensureClonedExercisesForAssignment(a.id);
+        if (ensured) row = ensured;
+      } catch (err2) {
+        if (isCloneSchemaUnavailableError(err2)) {
+          row = { ...a, clientRoutineExercises: [] };
+        } else {
+          throw err2;
+        }
+      }
     }
     enriched.push(row);
   }
@@ -321,16 +387,35 @@ export async function unassignRoutine(clientId, routineId, coachId) {
  * @param {string} coachId
  */
 export async function getAssignmentDetailForCoach(assignmentId, coachId) {
-  const cr = await prisma.clientRoutine.findFirst({
-    where: { id: assignmentId, active: true },
-    include: { client: true, ...assignmentFullInclude },
-  });
+  let cr;
+  let skippedCloneInclude = false;
+  try {
+    cr = await prisma.clientRoutine.findFirst({
+      where: { id: assignmentId, active: true },
+      include: { client: true, ...assignmentFullInclude },
+    });
+  } catch (err) {
+    if (!isCloneSchemaUnavailableError(err)) throw err;
+    skippedCloneInclude = true;
+    cr = await prisma.clientRoutine.findFirst({
+      where: { id: assignmentId, active: true },
+      include: { client: true, ...assignmentRoutineOnlyInclude },
+    });
+  }
   if (!cr) throw new NotFoundError('Asignación');
   if (cr.client.coachId !== coachId) throw new ForbiddenError('Acceso denegado');
-  let row = cr;
-  if (!cr.clientRoutineExercises?.length) {
-    const ensured = await ensureClonedExercisesForAssignment(cr.id);
-    if (ensured) row = ensured;
+  let row = skippedCloneInclude ? { ...cr, clientRoutineExercises: [] } : cr;
+  if (!skippedCloneInclude && !cr.clientRoutineExercises?.length) {
+    try {
+      const ensured = await ensureClonedExercisesForAssignment(cr.id);
+      if (ensured) row = ensured;
+    } catch (err2) {
+      if (isCloneSchemaUnavailableError(err2)) {
+        row = { ...cr, clientRoutineExercises: [] };
+      } else {
+        throw err2;
+      }
+    }
   }
   return {
     id: row.id,
@@ -347,15 +432,34 @@ export async function getAssignmentDetailForCoach(assignmentId, coachId) {
  * @param {string} clientProfileId
  */
 export async function getAssignmentDetailForClient(assignmentId, clientProfileId) {
-  const cr = await prisma.clientRoutine.findFirst({
-    where: { id: assignmentId, clientId: clientProfileId, active: true },
-    include: assignmentFullInclude,
-  });
+  let cr;
+  let skippedCloneInclude = false;
+  try {
+    cr = await prisma.clientRoutine.findFirst({
+      where: { id: assignmentId, clientId: clientProfileId, active: true },
+      include: assignmentFullInclude,
+    });
+  } catch (err) {
+    if (!isCloneSchemaUnavailableError(err)) throw err;
+    skippedCloneInclude = true;
+    cr = await prisma.clientRoutine.findFirst({
+      where: { id: assignmentId, clientId: clientProfileId, active: true },
+      include: assignmentRoutineOnlyInclude,
+    });
+  }
   if (!cr) throw new NotFoundError('Asignación');
-  let row = cr;
-  if (!cr.clientRoutineExercises?.length) {
-    const ensured = await ensureClonedExercisesForAssignment(cr.id);
-    if (ensured) row = ensured;
+  let row = skippedCloneInclude ? { ...cr, clientRoutineExercises: [] } : cr;
+  if (!skippedCloneInclude && !cr.clientRoutineExercises?.length) {
+    try {
+      const ensured = await ensureClonedExercisesForAssignment(cr.id);
+      if (ensured) row = ensured;
+    } catch (err2) {
+      if (isCloneSchemaUnavailableError(err2)) {
+        row = { ...cr, clientRoutineExercises: [] };
+      } else {
+        throw err2;
+      }
+    }
   }
   return {
     id: row.id,
