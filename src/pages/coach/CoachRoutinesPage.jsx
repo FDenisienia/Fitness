@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Card, Table, Button, Modal, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { Card, Table, Button, Modal, Form, Row, Col, Spinner, Alert, ProgressBar } from 'react-bootstrap';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { routinesApi, clientsApi, exercisesApi, clientRoutinesApi } from '../../api';
 import { OBJECTIVES, LEVELS, STIMULUS_TYPES } from '../../data/mockData';
@@ -11,6 +12,7 @@ import {
   mergeSessionNameKeys,
 } from '../../utils/sessionNames';
 import { normalizeExercisesFlatOrder } from '../../utils/routineExerciseOrder';
+import { sanitizeWeightInput } from '../../utils/weightInput';
 import RoutineExerciseFormBlocks from '../../components/coach/RoutineExerciseFormBlocks';
 
 const getEmptyExercise = (sessionIndex = 1) => ({
@@ -47,6 +49,14 @@ export default function CoachRoutinesPage() {
   const [selectedRoutine, setSelectedRoutine] = useState(null);
   const [assignClient, setAssignClient] = useState(assignClientId || '');
   const [assignDate, setAssignDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [assignPhase, setAssignPhase] = useState('pick');
+  const [assignWizardIndex, setAssignWizardIndex] = useState(0);
+  const [weightDraftByTemplateExId, setWeightDraftByTemplateExId] = useState({});
+
+  const assignOrderedExercises = useMemo(
+    () => (selectedRoutine ? normalizeExercisesFlatOrder(selectedRoutine.exercises || []) : []),
+    [selectedRoutine]
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -229,30 +239,98 @@ export default function CoachRoutinesPage() {
     setSelectedRoutine(r);
     setAssignClient(assignClientId || '');
     setAssignDate(new Date().toISOString().slice(0, 10));
+    setAssignPhase('pick');
+    setAssignWizardIndex(0);
+    setWeightDraftByTemplateExId({});
     setShowAssign(true);
   };
 
-  const saveAssign = async () => {
-    if (!selectedRoutine || !assignClient) return;
-    const already = (clientRoutinesMap[assignClient] || []).some(cr => cr.routineId === selectedRoutine.id && cr.active !== false);
-    if (already) {
-      alert('Este cliente ya tiene asignada esta rutina');
+  const closeAssignModal = () => {
+    setShowAssign(false);
+    setAssignPhase('pick');
+    setAssignWizardIndex(0);
+    setWeightDraftByTemplateExId({});
+  };
+
+  const goFromPickToWeights = () => {
+    if (!selectedRoutine || !assignClient) {
+      if (!assignClient) alert('Seleccioná un cliente');
       return;
     }
     if (!assignDate) {
       alert('Elige la fecha de asignación');
       return;
     }
+    const already = (clientRoutinesMap[assignClient] || []).some(
+      (cr) => cr.routineId === selectedRoutine.id && cr.active !== false
+    );
+    if (already) {
+      alert('Este cliente ya tiene asignada esta rutina');
+      return;
+    }
+    const ordered = normalizeExercisesFlatOrder(selectedRoutine.exercises || []);
+    if (ordered.length === 0) {
+      submitAssign(undefined);
+      return;
+    }
+    const draft = {};
+    for (const ex of ordered) {
+      const n = Math.max(1, parseInt(String(ex.sets), 10) || 3);
+      draft[ex.id] = Array(n).fill('');
+    }
+    setWeightDraftByTemplateExId(draft);
+    setAssignWizardIndex(0);
+    setAssignPhase('weights');
+  };
+
+  const submitAssign = async (exerciseSetWeights) => {
+    if (!selectedRoutine || !assignClient) {
+      if (!assignClient) alert('Seleccioná un cliente');
+      return;
+    }
+    if (!assignDate) {
+      alert('Elige la fecha de asignación');
+      return;
+    }
+    const already = (clientRoutinesMap[assignClient] || []).some(
+      (cr) => cr.routineId === selectedRoutine.id && cr.active !== false
+    );
+    if (already) {
+      alert('Este cliente ya tiene asignada esta rutina');
+      return;
+    }
     setSaving(true);
     try {
-      await clientRoutinesApi.assign(assignClient, selectedRoutine.id, assignDate);
-      setShowAssign(false);
+      await clientRoutinesApi.assign(assignClient, selectedRoutine.id, assignDate, exerciseSetWeights);
+      closeAssignModal();
       loadData();
     } catch (err) {
       alert(err.message || 'Error al asignar');
     } finally {
       setSaving(false);
     }
+  };
+
+  const finishWeightsWizard = () => {
+    const exerciseSetWeights = {};
+    for (const ex of assignOrderedExercises) {
+      const arr = weightDraftByTemplateExId[ex.id] || [];
+      exerciseSetWeights[ex.id] = arr.map((v) => {
+        if (v === '' || v == null || String(v).trim() === '') return null;
+        const f = parseFloat(String(v).replace(',', '.'));
+        return Number.isFinite(f) ? f : null;
+      });
+    }
+    submitAssign(exerciseSetWeights);
+  };
+
+  const setWizardWeightCell = (templateExId, setIdx, val) => {
+    setWeightDraftByTemplateExId((prev) => ({
+      ...prev,
+      [templateExId]: (prev[templateExId] || []).map((cell, i) =>
+        i === setIdx ? sanitizeWeightInput(val) : cell
+      ),
+    }));
   };
 
   if (loading) {
@@ -370,36 +448,145 @@ export default function CoachRoutinesPage() {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showAssign} onHide={() => setShowAssign(false)} size="lg">
-        <Modal.Header closeButton><Modal.Title>Asignar rutina a cliente</Modal.Title></Modal.Header>
+      <Modal show={showAssign} onHide={closeAssignModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {assignPhase === 'pick' ? 'Asignar rutina a cliente' : 'Cargas por serie'}
+          </Modal.Title>
+        </Modal.Header>
         <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>Fecha de asignación</Form.Label>
-            <Form.Control
-              type="date"
-              value={assignDate}
-              onChange={e => setAssignDate(e.target.value)}
-            />
-            <Form.Text className="text-muted">
-              El entrenamiento quedará planificado en el calendario para este día.
-            </Form.Text>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Cliente</Form.Label>
-            <Form.Select value={assignClient} onChange={e => setAssignClient(e.target.value)}>
-              <option value="">Seleccionar cliente</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>{clientDisplayName(c)}</option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          {selectedRoutine && (
-            <p className="small text-muted mb-2">Rutina: <strong>{selectedRoutine.name}</strong></p>
+          {assignPhase === 'pick' ? (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label>Fecha de asignación</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={assignDate}
+                  onChange={(e) => setAssignDate(e.target.value)}
+                />
+                <Form.Text className="text-muted">
+                  El entrenamiento quedará planificado en el calendario para este día.
+                </Form.Text>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Cliente</Form.Label>
+                <Form.Select value={assignClient} onChange={(e) => setAssignClient(e.target.value)}>
+                  <option value="">Seleccionar cliente</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {clientDisplayName(c)}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+              {selectedRoutine && (
+                <p className="small text-muted mb-2">
+                  Rutina: <strong>{selectedRoutine.name}</strong>
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <span className="small text-muted">
+                  Ejercicio {assignWizardIndex + 1} de {assignOrderedExercises.length}
+                </span>
+                <span className="small text-muted">
+                  {Math.round(((assignWizardIndex + 1) / assignOrderedExercises.length) * 100)}%
+                </span>
+              </div>
+              <ProgressBar
+                now={((assignWizardIndex + 1) / assignOrderedExercises.length) * 100}
+                className="mb-3"
+                style={{ height: 6 }}
+              />
+              <AnimatePresence mode="wait">
+                {(() => {
+                  const ex = assignOrderedExercises[assignWizardIndex];
+                  if (!ex) return null;
+                  const n = Math.max(1, parseInt(String(ex.sets), 10) || 3);
+                  const cells = weightDraftByTemplateExId[ex.id] || Array(n).fill('');
+                  return (
+                    <motion.div
+                      key={ex.id}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -16 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <h6 className="mb-2">{ex.name}</h6>
+                      <p className="small text-muted mb-3">
+                        {n} serie{n !== 1 ? 's' : ''}
+                        {ex.reps ? ` · ${ex.reps} repeticiones` : ''}
+                      </p>
+                      <Row className="g-2">
+                        {Array.from({ length: n }, (_, i) => (
+                          <Col xs={6} sm={4} key={i}>
+                            <Form.Group className="mb-0">
+                              <Form.Label className="small mb-1">Serie {i + 1} (kg)</Form.Label>
+                              <Form.Control
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
+                                placeholder="Opcional"
+                                value={cells[i] ?? ''}
+                                onChange={(e) => setWizardWeightCell(ex.id, i, e.target.value)}
+                              />
+                            </Form.Group>
+                          </Col>
+                        ))}
+                      </Row>
+                    </motion.div>
+                  );
+                })()}
+              </AnimatePresence>
+            </>
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAssign(false)}>Cancelar</Button>
-          <Button className="btn-primary" onClick={saveAssign} disabled={saving}>{saving ? 'Asignando...' : 'Asignar'}</Button>
+          {assignPhase === 'pick' ? (
+            <>
+              <Button variant="secondary" onClick={closeAssignModal}>
+                Cancelar
+              </Button>
+              <Button className="btn-primary" onClick={goFromPickToWeights} disabled={saving}>
+                Siguiente
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline-secondary"
+                onClick={() => {
+                  setAssignPhase('pick');
+                  setAssignWizardIndex(0);
+                }}
+                disabled={saving}
+              >
+                Volver
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setAssignWizardIndex((i) => Math.max(0, i - 1))}
+                disabled={saving || assignWizardIndex === 0}
+              >
+                Anterior
+              </Button>
+              {assignWizardIndex < assignOrderedExercises.length - 1 ? (
+                <Button
+                  className="btn-primary"
+                  onClick={() => setAssignWizardIndex((i) => i + 1)}
+                  disabled={saving}
+                >
+                  Siguiente
+                </Button>
+              ) : (
+                <Button className="btn-primary" onClick={finishWeightsWizard} disabled={saving}>
+                  {saving ? 'Asignando...' : 'Guardar asignación'}
+                </Button>
+              )}
+            </>
+          )}
         </Modal.Footer>
       </Modal>
     </div>

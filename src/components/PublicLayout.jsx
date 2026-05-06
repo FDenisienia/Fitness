@@ -44,7 +44,6 @@ export default function PublicLayout() {
     { href: '#funcionalidades', label: 'Funcionalidades', onClick: (e) => scrollTo(e, '#funcionalidades') },
     { href: '#como-empezar', label: 'Cómo empezar', onClick: (e) => scrollTo(e, '#como-empezar') },
     { href: '#planes', label: 'Planes', onClick: (e) => scrollTo(e, '#planes') },
-    { href: '#contacto', label: 'Contacto', onClick: (e) => scrollTo(e, '#contacto') },
   ] : [];
   const navLinksRight = isLanding ? [
     { to: '/login', label: 'Iniciar sesión', isLink: true },

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Button } from 'react-bootstrap';
 import { motion } from 'framer-motion';
+import { whatsappUrl } from '../../config/whatsapp';
 
 export default function LandingCTAFinal() {
   return (
@@ -32,7 +33,14 @@ export default function LandingCTAFinal() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ delay: 0.2, duration: 0.4 }}
         >
-          <Button as={Link} to="/registro" size="lg" className="btn-primary me-2 mb-2 mb-sm-0 btn-animated">
+          <Button
+            as="a"
+            href={whatsappUrl('Hola, quiero empezar con Athlento hoy.')}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="lg"
+            className="btn-primary me-2 mb-2 mb-sm-0 btn-animated"
+          >
             Empezá hoy
           </Button>
           <Button as={Link} to="/login" variant="outline-light" size="lg" className="btn-animated">

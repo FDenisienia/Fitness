@@ -297,7 +297,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
 
   if (clientId && selectedClient) {
     const d = clientDisplay(selectedClient);
-    const clientRoutineList = getClientRoutines(selectedClient.id);
+    const clientRoutineAssignments = (clientRoutines[selectedClient.id] || []).filter((r) => r.active !== false);
     const toPwDate = (pw) => {
       const raw = pw.date;
       if (!raw) return '';
@@ -353,17 +353,20 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
           </Card.Body>
         </Card>
         <h5>Rutinas asignadas</h5>
-        {clientRoutineList.length === 0 ? (
+        {clientRoutineAssignments.length === 0 ? (
           <p className="text-muted">Este alumno aún no tiene rutinas asignadas.</p>
         ) : (
           <div className="cards-grid">
-            {clientRoutineList.map((r) => (
-              <Card key={r.id} className="p-3 client-routine-card">
+            {clientRoutineAssignments.map((a) => (
+              <Card key={a.id} className="p-3 client-routine-card">
                 <div className="d-flex justify-content-between align-items-start gap-2">
                   <div className="flex-grow-1 min-width-0">
-                    <Link to={`/coach/rutinas/${r.id}`} className="text-decoration-none text-reset">
-                      <strong className="d-block text-truncate">{r.name}</strong>
-                      <p className="mb-0 small text-muted">{r.objective} • {r.level}</p>
+                    <Link
+                      to={`/coach/rutinas/${a.routineId}?forClient=${selectedClient.id}`}
+                      className="text-decoration-none text-reset"
+                    >
+                      <strong className="d-block text-truncate">{a.routine?.name || 'Rutina'}</strong>
+                      <p className="mb-0 small text-muted">{a.routine?.objective} • {a.routine?.level}</p>
                     </Link>
                   </div>
                   <Button
@@ -371,7 +374,7 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
                     size="sm"
                     className="flex-shrink-0"
                     disabled={saving}
-                    onClick={() => unassignRoutineFromClient(r.id)}
+                    onClick={() => unassignRoutineFromClient(a.routineId)}
                   >
                     Quitar asignación
                   </Button>
@@ -397,7 +400,15 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
                 {clientPlannedPending.map((pw) => (
                   <tr key={pw.id}>
                     <td>{new Date(toPwDate(pw) + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                    <td>{pw.routine?.name || routines.find((x) => x.id === pw.routineId)?.name || '—'}</td>
+                    <td>
+                      <div>{pw.routine?.name || routines.find((x) => x.id === pw.routineId)?.name || '—'}</div>
+                      <Link
+                        className="small"
+                        to={`/coach/rutinas/${pw.routineId}?forClient=${selectedClient.id}`}
+                      >
+                        Ver rutina y cargas
+                      </Link>
+                    </td>
                     <td className="text-end">
                       <Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deletePlannedWorkoutEntry(pw.id)}>
                         Quitar del calendario
@@ -428,7 +439,15 @@ export default function CoachClientsPage({ embedded = false, basePath = '/coach/
                 {clientCompleted.map(pw => (
                   <tr key={pw.id}>
                     <td>{pw.completedAt ? new Date(pw.completedAt).toLocaleDateString() : new Date(pw.date).toLocaleDateString()}</td>
-                    <td>{pw.routine?.name || '-'}</td>
+                    <td>
+                      <div>{pw.routine?.name || '-'}</div>
+                      <Link
+                        className="small"
+                        to={`/coach/rutinas/${pw.routineId}?forClient=${selectedClient.id}`}
+                      >
+                        Ver rutina y cargas
+                      </Link>
+                    </td>
                     <td>{pw.rpe != null ? `${pw.rpe}/10` : '—'}</td>
                     <td className="small text-muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>{pw.sensations?.trim() || '—'}</td>
                     <td className="small text-muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>{(pw.feedback || pw.clientNotes)?.trim() || '—'}</td>

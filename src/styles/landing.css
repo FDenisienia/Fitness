@@ -762,75 +762,10 @@ html {
   color: var(--white-dim);
 }
 
-/* ===== CONTACTO ===== */
-.landing-contact {
-  padding: 5rem 0;
-  background: var(--bg-root);
-}
-
-.landing-contact-card {
-  background: var(--bg-card);
-  border: 0.5px solid var(--orange-ghost);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-}
-
-.landing-contact-input {
-  background: var(--bg-surface) !important;
-  border: 0.5px solid var(--orange-ghost) !important;
-  color: var(--white-pure) !important;
-}
-
-.landing-contact-input::placeholder {
-  color: var(--white-dim);
-}
-
-.landing-contact-input:focus {
-  border-color: var(--orange-light) !important;
-  box-shadow: 0 0 0 2px rgba(255, 92, 0, 0.2) !important;
-}
-
-.landing-contact .form-label {
-  color: var(--white-muted);
-  font-weight: 500;
-}
-
-.landing-contact-success {
-  padding: 2rem;
-}
-
-.landing-contact-success-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--orange-ghost);
-  color: var(--orange);
-  font-size: 2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-}
-
-.landing-contact-success-title {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--white-pure);
-  margin-bottom: 0.5rem;
-}
-
-.landing-contact-success-text {
-  color: var(--white-muted);
-  margin-bottom: 0;
-}
-
 /* Scroll offset para anclas: evita que el header fijo tape los títulos */
 #funcionalidades,
 #como-empezar,
 #planes,
-#contacto,
 #problema-solucion,
 #cta-final,
 #testimonios,
@@ -842,7 +777,6 @@ html {
   #funcionalidades,
   #como-empezar,
   #planes,
-  #contacto,
   #problema-solucion,
   #cta-final,
   #testimonios,
@@ -1375,8 +1309,7 @@ html {
   .landing-pricing,
   .landing-benefits,
   .landing-testimonials,
-  .landing-cta-final,
-  .landing-contact {
+  .landing-cta-final {
     padding: 2.5rem 0;
   }
   .solution-block {

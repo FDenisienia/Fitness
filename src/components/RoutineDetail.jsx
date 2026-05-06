@@ -6,6 +6,7 @@ import { plannedWorkoutsApi } from '../api';
 import { calcRoutineCalories } from '../utils/routineCalories';
 import { getSessionDisplayName } from '../utils/sessionNames';
 import VideoCard from './VideoCard';
+import ClientRoutineLoadsModal from './ClientRoutineLoadsModal';
 
 // Iconos SVG
 const IconDays = () => (
@@ -124,11 +125,14 @@ export default function RoutineDetail({
   plannedWorkoutsForRoutine = [],
   onPlannedWorkoutUpdated,
   coachName = null,
+  canEditLoads = false,
+  onLoadsSaved,
 }) {
   const { user } = useAuth();
   const displayClientName = clientName || (user?.role === 'cliente' ? `${user?.name} ${user?.lastName}` : null);
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showLoadsModal, setShowLoadsModal] = useState(false);
   const [completeForm, setCompleteForm] = useState({ rpe: 5, sensations: '', feedback: '' });
   const [markedComplete, setMarkedComplete] = useState(false);
   /** Cuando no hay ?date= en la URL, el usuario elige qué día planificado completar */
@@ -171,6 +175,11 @@ export default function RoutineDetail({
   });
   const dayBlocks = useMemo(() => groupExercisesBySession(exercises), [exercises]);
   const { total: totalKcal, byExercise } = calcRoutineCalories(routine, []);
+
+  const showLoadsEditor =
+    canEditLoads &&
+    !!routine?.clientRoutineId &&
+    (routine.exercises || []).some((e) => Array.isArray(e.exerciseSets) && e.exerciseSets.length > 0);
 
   const downloadPDF = () => {
     downloadRoutinePdf({
@@ -262,6 +271,16 @@ export default function RoutineDetail({
             {showPdfButton && (
               <Button onClick={downloadPDF} className="routine-detail-actions-pdf btn-primary fw-medium">
                 Descargar PDF
+              </Button>
+            )}
+            {showLoadsEditor && (
+              <Button
+                type="button"
+                variant="outline-primary"
+                className="routine-detail-actions-pdf fw-medium"
+                onClick={() => setShowLoadsModal(true)}
+              >
+                Editar cargas
               </Button>
             )}
             {plannedWorkoutsForRoutine.length > 0 && !plannedWorkout && (
@@ -414,6 +433,19 @@ export default function RoutineDetail({
                       {getExerciseKcal(ex) > 0 && <span className="ex-detail-metrics-kcal"><IconFlame /> ~{getExerciseKcal(ex)} kcal</span>}
                       {ex.time && <span><IconClock /> {ex.time}s</span>}
                     </div>
+                    {ex.exerciseSets?.length > 0 && (
+                      <div className="small text-muted mt-2 mb-0">
+                        <strong className="text-muted">Cargas:</strong>{' '}
+                        {ex.exerciseSets.map((s, idx) => (
+                          <span key={s.id || idx} className="me-2">
+                            S{s.setNumber}{' '}
+                            {s.assignedWeight != null && s.assignedWeight !== ''
+                              ? `${s.assignedWeight} kg`
+                              : '—'}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </header>
 
@@ -476,6 +508,15 @@ export default function RoutineDetail({
         </div>
         );
       })}
+
+      {/* Modal editar cargas (instancia cliente) */}
+      <ClientRoutineLoadsModal
+        show={showLoadsModal}
+        onHide={() => setShowLoadsModal(false)}
+        routine={routine}
+        clientRoutineId={routine?.clientRoutineId}
+        onSaved={onLoadsSaved}
+      />
 
       {/* Modal completar */}
       <Modal show={showCompleteModal} onHide={() => setShowCompleteModal(false)} fullscreen="sm-down">

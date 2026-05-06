@@ -1,12 +1,10 @@
 import React from 'react';
-
-/** WhatsApp wa.me usa solo dígitos (código país + número, sin + ni espacios). */
-const WHATSAPP_URL = 'https://wa.me/34644636917';
+import { WHATSAPP_BASE_URL } from '../config/whatsapp';
 
 export default function WhatsAppFloatButton() {
   return (
     <a
-      href={WHATSAPP_URL}
+      href={WHATSAPP_BASE_URL}
       className="whatsapp-float"
       target="_blank"
       rel="noopener noreferrer"

@@ -1,8 +1,7 @@
 import React from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { Button } from 'react-bootstrap';
+import { Container, Row, Col, Button } from 'react-bootstrap';
 import { motion } from 'framer-motion';
+import { whatsappUrl } from '../../config/whatsapp';
 import { HOW_IT_WORKS_STEPS } from '../../data/landingData';
 
 export default function LandingHowItWorks() {
@@ -47,7 +46,14 @@ export default function LandingHowItWorks() {
         </div>
 
         <div className="text-center mt-5">
-          <Button as={Link} to="/registro" size="lg" className="btn-primary">
+          <Button
+            as="a"
+            href={whatsappUrl('Hola, quiero crear mi cuenta gratis en Athlento.')}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="lg"
+            className="btn-primary"
+          >
             Crear cuenta gratis
           </Button>
         </div>

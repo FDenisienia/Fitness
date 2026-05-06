@@ -7,7 +7,6 @@ const FOOTER_LINKS = [
   { to: '#funcionalidades', label: 'Funcionalidades' },
   { to: '#como-empezar', label: 'Cómo empezar' },
   { to: '#planes', label: 'Planes' },
-  { to: '#contacto', label: 'Contacto' },
 ];
 
 export default function LandingFooter() {

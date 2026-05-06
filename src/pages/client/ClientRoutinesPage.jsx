@@ -38,6 +38,14 @@ export default function ClientRoutinesPage() {
     load();
   }, [user?.clientId]);
 
+  const reloadDetailRoutine = useCallback(() => {
+    if (!routineId || !user?.clientId) return;
+    routinesApi
+      .getById(routineId)
+      .then((res) => setDetailRoutine(res.data || null))
+      .catch(() => {});
+  }, [routineId, user?.clientId]);
+
   useEffect(() => {
     if (!routineId || !user?.clientId) {
       setDetailRoutine(null);
@@ -104,6 +112,8 @@ export default function ClientRoutinesPage() {
           plannedWorkout={plannedWorkoutFromUrl}
           plannedWorkoutsForRoutine={workoutsForRoutine}
           onPlannedWorkoutUpdated={reloadPlannedWorkouts}
+          canEditLoads={user?.role === 'cliente' && !!routine?.clientRoutineId}
+          onLoadsSaved={reloadDetailRoutine}
         />
       </div>
     );

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { motion } from 'framer-motion';
+import { whatsappUrl } from '../../config/whatsapp';
 
 export default function LandingHero() {
   return (
@@ -32,7 +33,14 @@ export default function LandingHero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.5 }}
             >
-              <Button as={Link} to="/registro" size="lg" className="btn-primary me-2 mb-2 mb-md-0 btn-animated">
+              <Button
+                as="a"
+                href={whatsappUrl('Hola, quiero solicitar la prueba gratis de Athlento.')}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="lg"
+                className="btn-primary me-2 mb-2 mb-md-0 btn-animated"
+              >
                 Solicitá tu prueba gratis
               </Button>
               <Button as={Link} to="/login" variant="outline-light" size="lg" className="btn-animated">

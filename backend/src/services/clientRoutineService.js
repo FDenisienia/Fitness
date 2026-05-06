@@ -1,15 +1,214 @@
 import { prisma } from '../utils/prisma.js';
-import { NotFoundError, ForbiddenError } from '../utils/errors.js';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../utils/errors.js';
 import { formatRoutine } from './routineService.js';
 
+const clientRoutineExerciseInclude = {
+  exercise: true,
+  exerciseSets: { orderBy: { setNumber: 'asc' } },
+};
+
+const assignmentFullInclude = {
+  routine: {
+    include: {
+      routineExercises: {
+        include: { exercise: true },
+        orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }],
+      },
+    },
+  },
+  clientRoutineExercises: {
+    include: clientRoutineExerciseInclude,
+    orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }],
+  },
+};
+
 /**
- * @param {{ assignmentDate?: string }} options - Fecha YYYY-MM-DD: inicio de asignación y día en el calendario (PlannedWorkout)
+ * Normaliza pesos por RoutineExercise.id (plantilla). Valores no numéricos → null.
+ * @param {unknown} raw
+ * @param {{ id: string, sets: number }[]} routineExercises
+ */
+function normalizeExerciseSetWeightsMap(raw, routineExercises) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  /** @type {Record<string, (number | null)[]>} */
+  const out = {};
+  for (const re of routineExercises) {
+    const arr = raw[re.id];
+    if (!Array.isArray(arr)) continue;
+    const n = Math.max(1, parseInt(String(re.sets), 10) || 3);
+    const slice = arr.slice(0, n).map((v) => {
+      if (v === '' || v == null) return null;
+      const f = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+      return Number.isFinite(f) ? f : null;
+    });
+    while (slice.length < n) slice.push(null);
+    out[re.id] = slice;
+  }
+  return out;
+}
+
+async function cloneExercisesIntoAssignment(tx, clientRoutineId, routineExercises, weightsBySourceId) {
+  for (const re of routineExercises) {
+    const nSets = Math.max(1, parseInt(String(re.sets), 10) || 3);
+    const weights = weightsBySourceId[re.id] || [];
+    await tx.clientRoutineExercise.create({
+      data: {
+        clientRoutineId,
+        sourceRoutineExerciseId: re.id,
+        exerciseId: re.exerciseId,
+        customName: re.customName,
+        description: re.description,
+        instructions: re.instructions,
+        rest: re.rest,
+        videoUrl: re.videoUrl,
+        orderIndex: re.orderIndex,
+        sessionIndex: re.sessionIndex ?? 1,
+        notes: re.notes,
+        caloriasPorRep: re.caloriasPorRep,
+        caloriasPorMin: re.caloriasPorMin,
+        time: re.time,
+        exerciseSets: {
+          create: [...Array(nSets)].map((_, i) => ({
+            setNumber: i + 1,
+            reps: re.reps,
+            assignedWeight:
+              weights[i] != null && weights[i] !== '' && Number.isFinite(Number(weights[i]))
+                ? parseFloat(String(weights[i]))
+                : null,
+          })),
+        },
+      },
+    });
+  }
+}
+
+/**
+ * Asignaciones legacy sin filas clonadas: genera snapshot desde la plantilla actual.
+ */
+export async function ensureClonedExercisesForAssignment(assignmentId) {
+  const cr = await prisma.clientRoutine.findUnique({
+    where: { id: assignmentId },
+    include: {
+      clientRoutineExercises: { select: { id: true } },
+      routine: {
+        include: {
+          routineExercises: { orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }] },
+        },
+      },
+    },
+  });
+  if (!cr) return null;
+  if (cr.clientRoutineExercises.length > 0) {
+    return prisma.clientRoutine.findUnique({
+      where: { id: assignmentId },
+      include: assignmentFullInclude,
+    });
+  }
+  const template = cr.routine.routineExercises || [];
+  if (!template.length) {
+    return prisma.clientRoutine.findUnique({
+      where: { id: assignmentId },
+      include: assignmentFullInclude,
+    });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await cloneExercisesIntoAssignment(tx, cr.id, template, {});
+  });
+
+  return prisma.clientRoutine.findUnique({
+    where: { id: assignmentId },
+    include: assignmentFullInclude,
+  });
+}
+
+/**
+ * @param {import('@prisma/client').ClientRoutine & { routine: object, clientRoutineExercises: object[] }} assignment
+ */
+export function formatRoutineForClientView(assignment) {
+  const base = formatRoutine(assignment.routine);
+  const clones = assignment.clientRoutineExercises || [];
+  if (!clones.length) {
+    return { ...base, clientRoutineId: assignment.id, usesClientInstance: false };
+  }
+
+  const exercises = clones.map((cre) => {
+    const name = cre.exercise?.name || cre.customName || 'Ejercicio';
+    const sets = cre.exerciseSets?.length ?? 0;
+    const firstReps = cre.exerciseSets?.[0]?.reps ?? null;
+    return {
+      id: cre.id,
+      clientRoutineExerciseId: cre.id,
+      sourceRoutineExerciseId: cre.sourceRoutineExerciseId,
+      exerciseId: cre.exerciseId,
+      name,
+      customName: cre.customName,
+      description: cre.description,
+      instructions: cre.instructions,
+      sets: sets || 1,
+      reps: firstReps,
+      time: cre.time,
+      rest: cre.rest,
+      caloriasPorRep: cre.caloriasPorRep,
+      caloriasPorMin: cre.caloriasPorMin,
+      videoUrl: cre.videoUrl || cre.exercise?.videoUrl,
+      muscleGroup: cre.exercise?.muscleGroup || null,
+      order: cre.orderIndex,
+      sessionIndex: cre.sessionIndex ?? 1,
+      observations: cre.notes,
+      exerciseSets: (cre.exerciseSets || []).map((s) => ({
+        id: s.id,
+        setNumber: s.setNumber,
+        reps: s.reps,
+        assignedWeight: s.assignedWeight,
+      })),
+    };
+  });
+
+  return {
+    ...base,
+    exercises,
+    clientRoutineId: assignment.id,
+    usesClientInstance: true,
+  };
+}
+
+export async function findActiveAssignmentForClientRoutine(clientId, routineId) {
+  let a = await prisma.clientRoutine.findFirst({
+    where: { clientId, routineId, active: true },
+    include: assignmentFullInclude,
+  });
+  if (!a) return null;
+  if (!a.clientRoutineExercises?.length) {
+    const ensured = await ensureClonedExercisesForAssignment(a.id);
+    if (ensured) a = ensured;
+  }
+  return a;
+}
+
+/**
+ * Vista fusionada rutina + instancia cliente (coach o cliente).
+ * @param {string} clientProfileId
+ * @param {string} routineId
+ */
+export async function getMergedRoutineForClientProfile(clientProfileId, routineId) {
+  const a = await findActiveAssignmentForClientRoutine(clientProfileId, routineId);
+  if (!a) return null;
+  return formatRoutineForClientView(a);
+}
+
+/**
+ * @param {{ assignmentDate?: string, exerciseSetWeights?: Record<string, unknown> }} options
  */
 export async function assignRoutine(clientId, routineId, coachId, assignedById, options = {}) {
-  const { assignmentDate } = options;
+  const { assignmentDate, exerciseSetWeights } = options;
   const [client, routine] = await Promise.all([
     prisma.client.findUnique({ where: { id: clientId } }),
-    prisma.routine.findUnique({ where: { id: routineId } }),
+    prisma.routine.findUnique({
+      where: { id: routineId },
+      include: {
+        routineExercises: { orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }] },
+      },
+    }),
   ]);
   if (!client) throw new NotFoundError('Cliente');
   if (!routine) throw new NotFoundError('Rutina');
@@ -22,9 +221,13 @@ export async function assignRoutine(clientId, routineId, coachId, assignedById, 
   if (existing) throw new ForbiddenError('La rutina ya está asignada a este cliente');
 
   const startDate = assignmentDate ? new Date(assignmentDate) : new Date();
+  const weightsMap = normalizeExerciseSetWeightsMap(
+    exerciseSetWeights,
+    routine.routineExercises || []
+  );
 
   await prisma.$transaction(async (tx) => {
-    await tx.clientRoutine.create({
+    const created = await tx.clientRoutine.create({
       data: {
         clientId,
         routineId,
@@ -33,6 +236,12 @@ export async function assignRoutine(clientId, routineId, coachId, assignedById, 
         startDate,
       },
     });
+    await cloneExercisesIntoAssignment(
+      tx,
+      created.id,
+      routine.routineExercises || [],
+      weightsMap
+    );
     if (assignmentDate) {
       await tx.plannedWorkout.create({
         data: {
@@ -60,16 +269,33 @@ export async function listClientRoutines(clientId, coachId = null) {
           routineExercises: { include: { exercise: true }, orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }] },
         },
       },
+      clientRoutineExercises: {
+        include: clientRoutineExerciseInclude,
+        orderBy: [{ sessionIndex: 'asc' }, { orderIndex: 'asc' }],
+      },
     },
     orderBy: { assignedAt: 'desc' },
   });
-  return assignments.map((a) => ({
+
+  const enriched = [];
+  for (const a of assignments) {
+    let row = a;
+    if (a.active && (!a.clientRoutineExercises || a.clientRoutineExercises.length === 0)) {
+      const ensured = await ensureClonedExercisesForAssignment(a.id);
+      if (ensured) row = ensured;
+    }
+    enriched.push(row);
+  }
+
+  return enriched.map((a) => ({
     id: a.id,
     clientId: a.clientId,
     routineId: a.routineId,
     assignedAt: a.assignedAt,
     active: a.active,
     routine: formatRoutine(a.routine),
+    /** Vista con pesos por cliente; mismo shape que routinesApi para el alumno */
+    clientRoutine: formatRoutineForClientView(a),
   }));
 }
 
@@ -88,4 +314,155 @@ export async function unassignRoutine(clientId, routineId, coachId) {
     where: { clientId, routineId },
   });
   return { success: true };
+}
+
+/**
+ * @param {string} assignmentId - ClientRoutine.id
+ * @param {string} coachId
+ */
+export async function getAssignmentDetailForCoach(assignmentId, coachId) {
+  const cr = await prisma.clientRoutine.findFirst({
+    where: { id: assignmentId, active: true },
+    include: { client: true, ...assignmentFullInclude },
+  });
+  if (!cr) throw new NotFoundError('Asignación');
+  if (cr.client.coachId !== coachId) throw new ForbiddenError('Acceso denegado');
+  let row = cr;
+  if (!cr.clientRoutineExercises?.length) {
+    const ensured = await ensureClonedExercisesForAssignment(cr.id);
+    if (ensured) row = ensured;
+  }
+  return {
+    id: row.id,
+    clientId: row.clientId,
+    routineId: row.routineId,
+    assignedAt: row.assignedAt,
+    active: row.active,
+    routine: formatRoutineForClientView(row),
+  };
+}
+
+/**
+ * @param {string} assignmentId
+ * @param {string} clientProfileId
+ */
+export async function getAssignmentDetailForClient(assignmentId, clientProfileId) {
+  const cr = await prisma.clientRoutine.findFirst({
+    where: { id: assignmentId, clientId: clientProfileId, active: true },
+    include: assignmentFullInclude,
+  });
+  if (!cr) throw new NotFoundError('Asignación');
+  let row = cr;
+  if (!cr.clientRoutineExercises?.length) {
+    const ensured = await ensureClonedExercisesForAssignment(cr.id);
+    if (ensured) row = ensured;
+  }
+  return {
+    id: row.id,
+    clientId: row.clientId,
+    routineId: row.routineId,
+    assignedAt: row.assignedAt,
+    active: row.active,
+    routine: formatRoutineForClientView(row),
+  };
+}
+
+/**
+ * @param {string} assignmentId
+ * @param {string} coachId
+ * @param {{ updates: { clientRoutineExerciseId: string, setWeights: (number|null|string)[] }[] }} body
+ */
+export async function patchAssignmentSetWeights(assignmentId, coachId, body) {
+  const cr = await prisma.clientRoutine.findFirst({
+    where: { id: assignmentId, active: true },
+    include: {
+      client: true,
+      clientRoutineExercises: {
+        include: { exerciseSets: { orderBy: { setNumber: 'asc' } } },
+      },
+    },
+  });
+  if (!cr) throw new NotFoundError('Asignación');
+  if (cr.client.coachId !== coachId) throw new ForbiddenError('Acceso denegado');
+
+  const updates = body?.updates;
+  if (!Array.isArray(updates)) {
+    throw new BadRequestError('Formato inválido');
+  }
+
+  const allowedCre = new Set((cr.clientRoutineExercises || []).map((e) => e.id));
+
+  await prisma.$transaction(async (tx) => {
+    for (const u of updates) {
+      const creId = u.clientRoutineExerciseId;
+      if (!creId || !allowedCre.has(creId)) continue;
+      const cre = cr.clientRoutineExercises.find((e) => e.id === creId);
+      if (!cre) continue;
+      const weights = Array.isArray(u.setWeights) ? u.setWeights : [];
+      for (const setRow of cre.exerciseSets || []) {
+        const w = weights[setRow.setNumber - 1];
+        if (w === undefined) continue;
+        let next = null;
+        if (w !== '' && w != null && String(w).trim() !== '') {
+          const f = typeof w === 'number' ? w : parseFloat(String(w).replace(',', '.'));
+          next = Number.isFinite(f) ? f : null;
+        }
+        await tx.clientRoutineExerciseSet.update({
+          where: { id: setRow.id },
+          data: { assignedWeight: next },
+        });
+      }
+    }
+  });
+
+  return getAssignmentDetailForCoach(assignmentId, coachId);
+}
+
+/**
+ * @param {string} assignmentId
+ * @param {string} clientProfileId
+ * @param {{ updates: { clientRoutineExerciseId: string, setWeights: (number|null|string)[] }[] }} body
+ */
+export async function patchAssignmentSetWeightsAsClient(assignmentId, clientProfileId, body) {
+  const cr = await prisma.clientRoutine.findFirst({
+    where: { id: assignmentId, clientId: clientProfileId, active: true },
+    include: {
+      clientRoutineExercises: {
+        include: { exerciseSets: { orderBy: { setNumber: 'asc' } } },
+      },
+    },
+  });
+  if (!cr) throw new NotFoundError('Asignación');
+
+  const updates = body?.updates;
+  if (!Array.isArray(updates)) {
+    throw new BadRequestError('Formato inválido');
+  }
+
+  const allowedCre = new Set((cr.clientRoutineExercises || []).map((e) => e.id));
+
+  await prisma.$transaction(async (tx) => {
+    for (const u of updates) {
+      const creId = u.clientRoutineExerciseId;
+      if (!creId || !allowedCre.has(creId)) continue;
+      const cre = cr.clientRoutineExercises.find((e) => e.id === creId);
+      if (!cre) continue;
+      const weights = Array.isArray(u.setWeights) ? u.setWeights : [];
+      for (const setRow of cre.exerciseSets || []) {
+        const w = weights[setRow.setNumber - 1];
+        if (w === undefined) continue;
+        let next = null;
+        if (w !== '' && w != null && String(w).trim() !== '') {
+          const f = typeof w === 'number' ? w : parseFloat(String(w).replace(',', '.'));
+          next = Number.isFinite(f) ? f : null;
+        }
+        await tx.clientRoutineExerciseSet.update({
+          where: { id: setRow.id },
+          data: { assignedWeight: next },
+        });
+      }
+    }
+  });
+
+  return getAssignmentDetailForClient(assignmentId, clientProfileId);
 }

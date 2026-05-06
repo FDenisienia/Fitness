@@ -136,6 +136,15 @@ function exerciseCardHeightMm(doc, ex, innerW, k) {
   if (ex.muscleGroup) lineY += gy(3.8, k);
   if (ex.time) lineY += gy(3.8, k);
   lineY += gy(3.4, k) + gy(5.2, k);
+  if (ex.exerciseSets?.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(fs(7.6, k));
+    const parts = ex.exerciseSets.map((s) =>
+      `S${s.setNumber}: ${s.assignedWeight != null && s.assignedWeight !== '' ? `${s.assignedWeight} kg` : '—'}`
+    );
+    const wLines = doc.splitTextToSize(parts.join(' · '), innerCardW - 2);
+    lineY += wLines.length * gy(3.8, k);
+  }
   if (ex.videoUrl) lineY += gy(4.8, k);
   if (ex.observations) {
     doc.setFont('helvetica', 'italic');
@@ -323,6 +332,19 @@ function drawExerciseCard(doc, ex, globalIndex, yStart, innerW, k) {
   doc.text(ex.reps != null && ex.reps !== '' ? String(ex.reps) : '—', baseX + colW, lineY);
   doc.text(ex.rest != null && ex.rest !== '' ? String(ex.rest) : '—', baseX + colW * 2, lineY);
   lineY += gy(5.2, k);
+
+  if (ex.exerciseSets?.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(fs(7.6, k));
+    doc.setTextColor(...COL.muted);
+    const parts = ex.exerciseSets.map((s) =>
+      `S${s.setNumber}: ${s.assignedWeight != null && s.assignedWeight !== '' ? `${s.assignedWeight} kg` : '—'}`
+    );
+    const wLines = doc.splitTextToSize(parts.join(' · '), innerCardW - 2);
+    doc.text(wLines, baseX + gy(1, k), lineY);
+    lineY += gy(3.8, k) * wLines.length;
+    doc.setTextColor(...COL.text);
+  }
 
   if (ex.videoUrl) {
     doc.setFont('helvetica', 'bold');

@@ -7,7 +7,6 @@ import LandingPricing from '../../components/landing/LandingPricing';
 import LandingBenefits from '../../components/landing/LandingBenefits';
 import LandingTestimonials from '../../components/landing/LandingTestimonials';
 import LandingCTAFinal from '../../components/landing/LandingCTAFinal';
-import LandingContact from '../../components/landing/LandingContact';
 import LandingFooter from '../../components/landing/LandingFooter';
 
 export default function LandingPage() {
@@ -21,7 +20,6 @@ export default function LandingPage() {
       <LandingBenefits />
       <LandingTestimonials />
       <LandingCTAFinal />
-      <LandingContact />
       <LandingFooter />
     </main>
   );

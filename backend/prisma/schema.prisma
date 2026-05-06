@@ -106,6 +106,7 @@ model ExerciseLibrary {
   createdByCoach Coach?  @relation("ExerciseLibraryCreatedByCoach", fields: [createdById], references: [id], onDelete: Cascade)
   routineExercises RoutineExercise[]
   progressLogs     ProgressLog[]
+  clientRoutineExercises ClientRoutineExercise[]
 }
 
 // ===== RUTINAS =====
@@ -158,6 +159,7 @@ model RoutineExercise {
   routine       Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   exercise      ExerciseLibrary? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
   progressLogs  ProgressLog[]
+  clientRoutineCopies ClientRoutineExercise[]
 }
 
 // ===== ASIGNACIÓN RUTINA-CLIENTE =====
@@ -175,6 +177,51 @@ model ClientRoutine {
 
   client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   routine     Routine   @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  clientRoutineExercises ClientRoutineExercise[]
+}
+
+/// Snapshot de ejercicios de la rutina base por asignación (instancia del cliente). No modifica RoutineExercise.
+model ClientRoutineExercise {
+  id                       String   @id @default(cuid())
+  clientRoutineId          String   @map("client_routine_id")
+  sourceRoutineExerciseId  String?  @map("source_routine_exercise_id")
+  exerciseId               String?  @map("exercise_id")
+  customName               String?  @map("custom_name")
+  description              String?  @db.Text
+  instructions             String?  @db.Text
+  rest                     String?
+  videoUrl                 String?  @map("video_url")
+  orderIndex               Int      @default(0) @map("order_index")
+  sessionIndex             Int      @default(1) @map("session_index")
+  notes                    String?  @db.Text
+  caloriasPorRep           Float?   @map("calorias_por_rep")
+  caloriasPorMin           Float?   @map("calorias_por_min")
+  time                     String?
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  clientRoutine            ClientRoutine @relation(fields: [clientRoutineId], references: [id], onDelete: Cascade)
+  sourceRoutineExercise   RoutineExercise? @relation(fields: [sourceRoutineExerciseId], references: [id], onDelete: SetNull)
+  exercise                 ExerciseLibrary? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  exerciseSets             ClientRoutineExerciseSet[]
+
+  @@index([clientRoutineId])
+  @@map("client_routine_exercises")
+}
+
+model ClientRoutineExerciseSet {
+  id                      String   @id @default(cuid())
+  clientRoutineExerciseId String   @map("client_routine_exercise_id")
+  setNumber               Int      @map("set_number")
+  reps                    String?
+  assignedWeight          Float?   @map("assigned_weight")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  clientRoutineExercise   ClientRoutineExercise @relation(fields: [clientRoutineExerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([clientRoutineExerciseId, setNumber])
+  @@map("client_routine_exercise_sets")
 }
 
 // ===== PLANIFICACIÓN CALENDARIO (workouts por fecha) =====

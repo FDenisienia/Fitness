@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { routinesApi } from '../../api';
 import RoutineDetail from '../../components/RoutineDetail';
 import { Spinner } from 'react-bootstrap';
@@ -8,17 +7,27 @@ import { Spinner } from 'react-bootstrap';
 export default function CoachRoutineDetailPage() {
   const { user } = useAuth();
   const { routineId } = useParams();
+  const [searchParams] = useSearchParams();
+  const forClient = searchParams.get('forClient')?.trim() || '';
   const [routine, setRoutine] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const loadRoutine = useCallback(() => {
     if (!routineId) return;
-    routinesApi.getById(routineId)
-      .then(res => setRoutine(res.data))
-      .catch(err => setError(err.message))
+    setLoading(true);
+    setError('');
+    const query = forClient ? { forClient } : {};
+    routinesApi
+      .getById(routineId, query)
+      .then((res) => setRoutine(res.data))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [routineId]);
+  }, [routineId, forClient]);
+
+  useEffect(() => {
+    loadRoutine();
+  }, [loadRoutine]);
 
   if (loading) {
     return (
@@ -35,7 +44,12 @@ export default function CoachRoutineDetailPage() {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         Volver a rutinas
       </Link>
-      <RoutineDetail routine={routine} showPdfButton={true} />
+      <RoutineDetail
+        routine={routine}
+        showPdfButton={true}
+        canEditLoads={!!forClient && !!routine?.clientRoutineId}
+        onLoadsSaved={loadRoutine}
+      />
     </div>
   );
 }

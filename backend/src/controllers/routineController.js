@@ -1,5 +1,6 @@
 import * as routineService from '../services/routineService.js';
 import * as clientRoutineService from '../services/clientRoutineService.js';
+import * as clientService from '../services/clientService.js';
 
 export async function list(req, res, next) {
   try {
@@ -15,7 +16,7 @@ export async function list(req, res, next) {
     }
     if (req.userRole === 'cliente' && clientId) {
       const assignments = await clientRoutineService.listClientRoutines(clientId);
-      const routines = assignments.filter((a) => a.active).map((a) => a.routine);
+      const routines = assignments.filter((a) => a.active).map((a) => a.clientRoutine);
       return res.json({ success: true, data: routines });
     }
     res.json({ success: true, data: [] });
@@ -28,13 +29,37 @@ export async function getById(req, res, next) {
   try {
     const coachId = req.user?.coach?.id;
     const clientId = req.user?.client?.id;
-    let routine;
+    const forClientProfileId =
+      typeof req.query.forClient === 'string' && req.query.forClient.trim()
+        ? req.query.forClient.trim()
+        : null;
+
+    if (req.userRole === 'coach' && coachId && forClientProfileId) {
+      await clientService.getClientById(forClientProfileId, coachId);
+      const merged = await clientRoutineService.getMergedRoutineForClientProfile(
+        forClientProfileId,
+        req.params.id
+      );
+      if (!merged) {
+        return res.status(404).json({ success: false, error: 'Rutina no asignada a este cliente' });
+      }
+      return res.json({ success: true, data: merged });
+    }
+
     if (req.userRole === 'cliente' && clientId) {
       const assignments = await clientRoutineService.listClientRoutines(clientId);
-      const hasAccess = assignments.some((a) => a.routineId === req.params.id);
-      if (!hasAccess) return res.status(403).json({ success: false, error: 'No tienes acceso a esta rutina' });
+      const hasAccess = assignments.some((a) => a.routineId === req.params.id && a.active);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'No tienes acceso a esta rutina' });
+      }
+      const merged = await clientRoutineService.getMergedRoutineForClientProfile(clientId, req.params.id);
+      if (!merged) {
+        return res.status(404).json({ success: false, error: 'Rutina no encontrada' });
+      }
+      return res.json({ success: true, data: merged });
     }
-    routine = await routineService.getRoutineById(req.params.id, coachId);
+
+    const routine = await routineService.getRoutineById(req.params.id, coachId);
     res.json({ success: true, data: routine });
   } catch (err) {
     next(err);

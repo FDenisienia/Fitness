@@ -1,8 +1,15 @@
 import React from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { whatsappUrl } from '../../config/whatsapp';
 import { PRICING_PLANS } from '../../data/landingData';
+
+const PLAN_WHATSAPP_MSG = {
+  basico: 'Hola, me interesa el plan Básico de Athlento.',
+  pro: 'Hola, me interesa el plan Pro de Athlento.',
+  premium: 'Hola, me interesa el plan Premium de Athlento.',
+  personalizado: 'Hola, quiero información sobre el plan Personalizado / a medida de Athlento.',
+};
 
 export default function LandingPricing() {
   return (
@@ -65,8 +72,10 @@ export default function LandingPricing() {
                   </ul>
                 )}
                 <Button
-                  as={Link}
-                  to={`/?plan=${plan.id}#contacto`}
+                  as="a"
+                  href={whatsappUrl(PLAN_WHATSAPP_MSG[plan.id] || `Hola, me interesa el plan ${plan.name} de Athlento.`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   variant={plan.popular ? 'primary' : 'secondary'}
                   className="w-100 mt-auto"
                 >
