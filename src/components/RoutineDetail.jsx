@@ -117,6 +117,28 @@ function formatPlanDateLabel(isoDate) {
   return d.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function formatAssignedWeightKg(w) {
+  if (w == null || w === '') return '—';
+  const n = typeof w === 'number' ? w : parseFloat(String(w).replace(',', '.'));
+  if (Number.isFinite(n)) return `${n} kg`;
+  return '—';
+}
+
+/** Filas por serie: datos del backend o, en instancia cliente, derivadas de `ex.sets`. */
+function getDisplaySetRows(ex, routine) {
+  if (Array.isArray(ex.exerciseSets) && ex.exerciseSets.length > 0) {
+    return ex.exerciseSets;
+  }
+  if (!routine?.usesClientInstance || !routine?.clientRoutineId) return [];
+  const n = Math.max(1, parseInt(String(ex.sets), 10) || 1);
+  return Array.from({ length: n }, (_, i) => ({
+    id: `ui-${ex.id}-${i}`,
+    setNumber: i + 1,
+    reps: ex.reps,
+    assignedWeight: null,
+  }));
+}
+
 export default function RoutineDetail({
   routine,
   clientName = null,
@@ -179,7 +201,8 @@ export default function RoutineDetail({
   const showLoadsEditor =
     canEditLoads &&
     !!routine?.clientRoutineId &&
-    (routine.exercises || []).some((e) => Array.isArray(e.exerciseSets) && e.exerciseSets.length > 0);
+    routine?.usesClientInstance === true &&
+    (routine.exercises || []).length > 0;
 
   const downloadPDF = () => {
     downloadRoutinePdf({
@@ -433,19 +456,20 @@ export default function RoutineDetail({
                       {getExerciseKcal(ex) > 0 && <span className="ex-detail-metrics-kcal"><IconFlame /> ~{getExerciseKcal(ex)} kcal</span>}
                       {ex.time && <span><IconClock /> {ex.time}s</span>}
                     </div>
-                    {ex.exerciseSets?.length > 0 && (
-                      <div className="small text-muted mt-2 mb-0">
-                        <strong className="text-muted">Cargas:</strong>{' '}
-                        {ex.exerciseSets.map((s, idx) => (
-                          <span key={s.id || idx} className="me-2">
-                            S{s.setNumber}{' '}
-                            {s.assignedWeight != null && s.assignedWeight !== ''
-                              ? `${s.assignedWeight} kg`
-                              : '—'}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    {(() => {
+                      const setRows = getDisplaySetRows(ex, routine);
+                      if (setRows.length === 0) return null;
+                      return (
+                        <div className="small mt-2 mb-0" style={{ color: 'var(--white-muted, #E0E0DC)' }}>
+                          <strong style={{ color: 'var(--white-pure, #F7F7F5)' }}>Cargas:</strong>{' '}
+                          {setRows.map((s, idx) => (
+                            <span key={s.id || `r-${idx}`} className="me-2">
+                              S{s.setNumber} {formatAssignedWeightKg(s.assignedWeight)}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </header>
 

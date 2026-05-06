@@ -58,6 +58,26 @@ function groupExercisesBySession(exercises) {
   return keys.map((k) => ({ day: k, exercises: map.get(k) }));
 }
 
+function formatPdfAssignedWeightKg(w) {
+  if (w == null || w === '') return '—';
+  const n = typeof w === 'number' ? w : parseFloat(String(w).replace(',', '.'));
+  if (Number.isFinite(n)) return `${n} kg`;
+  return '—';
+}
+
+/** Filas de cargas por serie (alineado con RoutineDetail). */
+function getPdfDisplaySetRows(ex, routine) {
+  if (Array.isArray(ex.exerciseSets) && ex.exerciseSets.length > 0) {
+    return ex.exerciseSets;
+  }
+  if (!routine?.usesClientInstance || !routine?.clientRoutineId) return [];
+  const n = Math.max(1, parseInt(String(ex.sets), 10) || 1);
+  return Array.from({ length: n }, (_, i) => ({
+    setNumber: i + 1,
+    assignedWeight: null,
+  }));
+}
+
 function getLevelLabel(level) {
   const l = String(level || '').toLowerCase();
   return { principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado' }[l] || level || '—';
@@ -130,18 +150,17 @@ function measureFirstPageHeaderBottomMm(logoMm, hasLogo) {
 const gy = (n, k) => n * k;
 const fs = (n, k) => Math.max(5.2, n * k);
 
-function exerciseCardHeightMm(doc, ex, innerW, k) {
+function exerciseCardHeightMm(doc, ex, innerW, k, routine) {
   const innerCardW = innerW - 6;
   let lineY = gy(9.5, k);
   if (ex.muscleGroup) lineY += gy(3.8, k);
   if (ex.time) lineY += gy(3.8, k);
   lineY += gy(3.4, k) + gy(5.2, k);
-  if (ex.exerciseSets?.length) {
+  const setRows = getPdfDisplaySetRows(ex, routine);
+  if (setRows.length) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(fs(7.6, k));
-    const parts = ex.exerciseSets.map((s) =>
-      `S${s.setNumber}: ${s.assignedWeight != null && s.assignedWeight !== '' ? `${s.assignedWeight} kg` : '—'}`
-    );
+    const parts = setRows.map((s) => `S${s.setNumber}: ${formatPdfAssignedWeightKg(s.assignedWeight)}`);
     const wLines = doc.splitTextToSize(parts.join(' · '), innerCardW - 2);
     lineY += wLines.length * gy(3.8, k);
   }
@@ -156,10 +175,10 @@ function exerciseCardHeightMm(doc, ex, innerW, k) {
   return Math.max(lineY + gy(3, k), gy(12, k));
 }
 
-function sumBlockContentHeightMm(doc, dayExs, innerW, k) {
+function sumBlockContentHeightMm(doc, dayExs, innerW, k, routine) {
   let s = gy(BLOCK_BAND_H, k) + gy(AFTER_BLOCK_BAND, k);
   for (const ex of dayExs) {
-    s += exerciseCardHeightMm(doc, ex, innerW, k) + gy(GAP_AFTER_EXERCISE, k);
+    s += exerciseCardHeightMm(doc, ex, innerW, k, routine) + gy(GAP_AFTER_EXERCISE, k);
   }
   return s;
 }
@@ -195,7 +214,7 @@ function estimateTotalBodyHeightMm(doc, routine, innerW, k, coachLine) {
 
   const dayBlocks = groupExercisesBySession(routine.exercises || []);
   for (const { exercises: dayExs } of dayBlocks) {
-    y += sumBlockContentHeightMm(doc, dayExs, innerW, k);
+    y += sumBlockContentHeightMm(doc, dayExs, innerW, k, routine);
   }
 
   const noteBodies = [];
@@ -271,14 +290,14 @@ function drawBlockBand(doc, pageW, y, innerW, day, count, k, sessionTitle) {
 
 const LINK_LABEL = '▶ Ver video';
 
-function drawExerciseCard(doc, ex, globalIndex, yStart, innerW, k) {
+function drawExerciseCard(doc, ex, globalIndex, yStart, innerW, k, routine) {
   const boxX = M.L;
   const boxW = innerW;
   const innerCardW = innerW - 6;
   const padL = 9;
   const baseX = boxX + padL;
   const colW = innerCardW / 3;
-  const boxH = exerciseCardHeightMm(doc, ex, innerW, k);
+  const boxH = exerciseCardHeightMm(doc, ex, innerW, k, routine);
   const r = gy(3.2, k);
 
   doc.setFillColor(...COL.bgCard);
@@ -333,13 +352,12 @@ function drawExerciseCard(doc, ex, globalIndex, yStart, innerW, k) {
   doc.text(ex.rest != null && ex.rest !== '' ? String(ex.rest) : '—', baseX + colW * 2, lineY);
   lineY += gy(5.2, k);
 
-  if (ex.exerciseSets?.length) {
+  const loadRows = getPdfDisplaySetRows(ex, routine);
+  if (loadRows.length) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(fs(7.6, k));
     doc.setTextColor(...COL.muted);
-    const parts = ex.exerciseSets.map((s) =>
-      `S${s.setNumber}: ${s.assignedWeight != null && s.assignedWeight !== '' ? `${s.assignedWeight} kg` : '—'}`
-    );
+    const parts = loadRows.map((s) => `S${s.setNumber}: ${formatPdfAssignedWeightKg(s.assignedWeight)}`);
     const wLines = doc.splitTextToSize(parts.join(' · '), innerCardW - 2);
     doc.text(wLines, baseX + gy(1, k), lineY);
     lineY += gy(3.8, k) * wLines.length;
@@ -501,7 +519,7 @@ export async function buildRoutinePdf(opts) {
     y = drawBlockBand(doc, pageW, y, innerW, day, dayExs.length, k, getSessionDisplayName(day, routine.sessionNames));
     for (const ex of dayExs) {
       globalIndex += 1;
-      y = drawExerciseCard(doc, ex, globalIndex, y, innerW, k) + gy(GAP_AFTER_EXERCISE, k);
+      y = drawExerciseCard(doc, ex, globalIndex, y, innerW, k, routine) + gy(GAP_AFTER_EXERCISE, k);
     }
   }
 

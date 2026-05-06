@@ -151,10 +151,33 @@ export function formatRoutineForClientView(assignment) {
     return { ...base, clientRoutineId: assignment.id, usesClientInstance: false };
   }
 
+  const templateExercises = assignment.routine?.routineExercises || [];
   const exercises = clones.map((cre) => {
+    const templateRe =
+      cre.sourceRoutineExerciseId &&
+      templateExercises.find((re) => re.id === cre.sourceRoutineExerciseId);
+
+    let exerciseSets = (cre.exerciseSets || []).map((s) => ({
+      id: s.id,
+      setNumber: s.setNumber,
+      reps: s.reps,
+      assignedWeight: s.assignedWeight,
+    }));
+
+    if (exerciseSets.length === 0 && templateRe) {
+      const n = Math.max(1, parseInt(String(templateRe.sets), 10) || 3);
+      exerciseSets = Array.from({ length: n }, (_, i) => ({
+        id: `syn-${cre.id}-${i + 1}`,
+        setNumber: i + 1,
+        reps: templateRe.reps,
+        assignedWeight: null,
+      }));
+    }
+
     const name = cre.exercise?.name || cre.customName || 'Ejercicio';
-    const sets = cre.exerciseSets?.length ?? 0;
-    const firstReps = cre.exerciseSets?.[0]?.reps ?? null;
+    const sets = Math.max(1, exerciseSets.length || parseInt(String(templateRe?.sets), 10) || 1);
+    const firstReps = exerciseSets[0]?.reps ?? templateRe?.reps ?? null;
+
     return {
       id: cre.id,
       clientRoutineExerciseId: cre.id,
@@ -164,7 +187,7 @@ export function formatRoutineForClientView(assignment) {
       customName: cre.customName,
       description: cre.description,
       instructions: cre.instructions,
-      sets: sets || 1,
+      sets,
       reps: firstReps,
       time: cre.time,
       rest: cre.rest,
@@ -175,12 +198,7 @@ export function formatRoutineForClientView(assignment) {
       order: cre.orderIndex,
       sessionIndex: cre.sessionIndex ?? 1,
       observations: cre.notes,
-      exerciseSets: (cre.exerciseSets || []).map((s) => ({
-        id: s.id,
-        setNumber: s.setNumber,
-        reps: s.reps,
-        assignedWeight: s.assignedWeight,
-      })),
+      exerciseSets,
     };
   });
 
