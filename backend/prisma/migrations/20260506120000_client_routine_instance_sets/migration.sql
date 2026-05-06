@@ -16,7 +16,7 @@ CREATE TABLE `client_routine_exercises` (
     `calorias_por_min` DOUBLE NULL,
     `time` VARCHAR(191) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updated_at` DATETIME(3) NOT NULL,
+    `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 
     INDEX `client_routine_exercises_client_routine_id_idx`(`client_routine_id`),
     PRIMARY KEY (`id`)
@@ -29,7 +29,7 @@ CREATE TABLE `client_routine_exercise_sets` (
     `reps` VARCHAR(191) NULL,
     `assigned_weight` DOUBLE NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updated_at` DATETIME(3) NOT NULL,
+    `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `client_routine_exercise_sets_client_routine_exercise_id_set_number_key`(`client_routine_exercise_id`, `set_number`),
     PRIMARY KEY (`id`)
