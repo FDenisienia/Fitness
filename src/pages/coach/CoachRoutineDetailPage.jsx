@@ -5,7 +5,6 @@ import RoutineDetail from '../../components/RoutineDetail';
 import { Spinner } from 'react-bootstrap';
 
 export default function CoachRoutineDetailPage() {
-  const { user } = useAuth();
   const { routineId } = useParams();
   const [searchParams] = useSearchParams();
   const forClient = searchParams.get('forClient')?.trim() || '';
